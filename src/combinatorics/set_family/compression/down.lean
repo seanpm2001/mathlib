@@ -3,7 +3,7 @@ Copyright (c) 2022 Yaël Dillies. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Yaël Dillies
 -/
-import combinatorics.set_family.shatter
+import data.fintype.basic
 
 /-!
 # Down-compressions
@@ -82,6 +82,20 @@ begin
   exact (erase_inj_on' _).mono (λ s hs, (mem_filter.1 hs).2),
 end
 
+@[simp] lemma member_section_member_section : (𝒜.member_section a).member_section a = ∅ :=
+by { ext, simp }
+
+@[simp] lemma member_section_non_member_section : (𝒜.non_member_section a).member_section a = ∅ :=
+by { ext, simp }
+
+@[simp] lemma non_member_section_member_section :
+  (𝒜.member_section a).non_member_section a = 𝒜.member_section a :=
+by { ext, simp }
+
+@[simp] lemma non_member_section_non_member_section :
+  (𝒜.non_member_section a).non_member_section a = 𝒜.non_member_section a :=
+by { ext, simp }
+
 end finset
 
 open finset
@@ -97,32 +111,18 @@ localized "notation `𝓓 ` := down.compress" in finset_family
 
 /-- `a` is in the down-compressed family iff it's in the original and its compression is in the
 original, or it's not in the original but it's the compression of something in the original. -/
-lemma mem_compress :
-  a ∈ 𝓓 a 𝒜 ↔ a ∈ s ∧ 𝓓 u v a ∈ s ∨ a ∉ s ∧ ∃ b ∈ s, 𝓓 u v b = a :=
-by simp_rw [compression, mem_union, mem_filter, mem_image, and_comm (a ∉ s)]
-
-lemma compress_disjoint (u v : α) :
-  disjoint (s.filter (λ a, 𝓓 u v a ∈ s)) ((s.image $ 𝓓 u v).filter (λ a, a ∉ s)) :=
-disjoint_left.2 $ λ a ha₁ ha₂, (mem_filter.1 ha₂).2 (mem_filter.1 ha₁).1
+lemma mem_compress : s ∈ 𝓓 a 𝒜 ↔ (insert a s ∈ 𝒜 ∨ s ∈ 𝒜) ∧ a ∉ s :=
+by simp_rw [compress, mem_union, mem_member_section, mem_non_member_section, ←or_and_distrib_right]
 
 lemma compress_union (a : α) (𝒜 ℬ : finset (finset α)) : 𝓓 a (𝒜 ∪ ℬ) = 𝓓 a 𝒜 ∪ 𝓓 a ℬ :=
 by simp_rw [compress, member_section_union, non_member_section_union, union_union_union_comm]
 
 /-- Down-compressing a family is idempotent. -/
 @[simp] lemma compress_idem (a : α) (𝒜 : finset (finset α)) : 𝓓 a (𝓓 a 𝒜) = 𝓓 a 𝒜 :=
-begin
-  change 𝓓 a (_ ∪ _) = _,
-  rw compress_union,
-  sorry
-end
+(compress_union _ _ _).trans $ by simp [compress]
 
 /-- Down-compressing a family reduces its size. -/
 lemma card_compress_le (a : α) (𝒜 : finset (finset α)) : (𝓓 a 𝒜).card ≤ 𝒜.card :=
 (card_union_le _ _).trans_eq $ card_member_section_add_card_non_member_section _ _
-
-/-- Down-compressing decreases the VC-dimension. -/
-lemma vc_dimension_compress_le (a : α) (𝒜 : finset (finset α)) :
-  (𝓓 a 𝒜).vc_dimension ≤ 𝒜.vc_dimension :=
-sorry
 
 end down
