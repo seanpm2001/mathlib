@@ -209,7 +209,8 @@ begin
   exact ⟨and.right, λ h, ⟨ts h, h⟩⟩
 end
 
-lemma countable_univ_pi {π : α → Type*} [finite α] {s : Π a, set (π a)} (hs : ∀ a, (s a).countable) :
+lemma countable_univ_pi {π : α → Type*} [finite α] {s : Π a, set (π a)}
+  (hs : ∀ a, (s a).countable) :
   (pi univ s).countable :=
 by { haveI := λ a, (hs a).to_subtype, exact countable.of_equiv _ (equiv.set.univ_pi s).symm }
 
