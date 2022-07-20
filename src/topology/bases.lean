@@ -298,22 +298,26 @@ lemma separable_space_of_dense_range {ι : Type*} [encodable ι] (u : ι → α)
   separable_space α :=
 ⟨⟨range u, countable_range u, hu⟩⟩
 
+lemma _root_.pairwise.countable_of_is_open_disjoint {ι : Type*} [separable_space α]
+  {s : ι → set α} (hd : pairwise (disjoint on s)) (ho : ∀ i, is_open (s i))
+  (hne : ∀ i, (s i).nonempty) :
+  countable ι :=
+begin
+  rcases exists_countable_dense α with ⟨u, u_countable, u_dense⟩,
+  haveI := u_countable.to_subtype,
+  have : ∀ i : ι, ∃ y : u, (y : α) ∈ s i :=
+    λ i, subtype.exists.2 (u_dense.exists_mem_open (ho i) (hne i)),
+  choose f hfs,
+  suffices : injective f, from this.countable,
+  exact λ i j h, by_contra (λ hne, (hd i j hne).ne_of_mem (hfs i) (hfs j) $ congr_arg coe h)
+end
+
 /-- In a separable space, a family of nonempty disjoint open sets is countable. -/
 lemma _root_.set.pairwise_disjoint.countable_of_is_open [separable_space α] {ι : Type*}
   {s : ι → set α} {a : set ι} (h : a.pairwise_disjoint s) (ha : ∀ i ∈ a, is_open (s i))
   (h'a : ∀ i ∈ a, (s i).nonempty) :
   a.countable :=
-begin
-  rcases exists_countable_dense α with ⟨u, ⟨u_encodable⟩, u_dense⟩,
-  have : ∀ i : a, ∃ y, y ∈ s i ∩ u :=
-    λ i, dense_iff_inter_open.1 u_dense (s i) (ha i i.2) (h'a i i.2),
-  choose f hfs hfu using this,
-  lift f to a → u using hfu,
-  have f_inj : injective f,
-  { refine injective_iff_pairwise_ne.mpr ((h.subtype _ _).mono $ λ i j hij hfij, hij ⟨hfs i, _⟩),
-    simp only [congr_arg coe hfij, hfs j] },
-  exact ⟨@encodable.of_inj _ _ u_encodable f f_inj⟩
-end
+(h.subtype _ _).countable_of_is_open_disjoint (λ i, ha i i.2) (λ i, h'a i i.2)
 
 /-- In a separable space, a family of disjoint sets with nonempty interiors is countable. -/
 lemma _root_.set.pairwise_disjoint.countable_of_nonempty_interior [separable_space α] {ι : Type*}
