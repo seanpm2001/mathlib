@@ -35,7 +35,7 @@ lemma countable_coe_iff {s : set α} : countable s ↔ s.countable := iff.rfl
 
 alias countable_coe_iff ↔ _ countable.to_subtype
 
-lemma countable.of_subtype (s : set α) [countable s] : s.countable := countable_coe_iff.mp ‹_›
+lemma to_countable (s : set α) [countable s] : s.countable := countable_coe_iff.mp ‹_›
 
 lemma countable.subset {s t : set α} (ht : t.countable) (h : s ⊆ t) : s.countable :=
 by { haveI := ht.to_subtype, exact (inclusion_injective h).countable }
@@ -108,7 +108,7 @@ begin
   exact ⟨enumerate_countable hs default, subset_range_enumerate _ _⟩,
 end
 
-alias countable_iff_exists_subset_range ↔ set.countable.exists_subset_range _
+alias countable_iff_exists_subset_range ↔ countable.exists_subset_range _
 
 lemma maps_to.countable_of_inj_on {s : set α} {t : set β} {f : α → β}
   (hf : maps_to f s t) (hf' : inj_on f s) (ht : t.countable) :
