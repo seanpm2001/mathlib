@@ -488,7 +488,7 @@ begin
   rcases hs.exists_countable_dense_subset with ⟨t, hts, htc, htd⟩,
   refine ⟨(t ∪ ({x | is_bot x} ∪ {x | is_top x})) ∩ s, _, _, _, _, _⟩,
   exacts [inter_subset_right _ _,
-    (htc.union ((countable_is_bot α).union (countable_is_top α))).mono (inter_subset_left _ _),
+    (htc.union ((countable_is_bot α).union (countable_is_top α))).subset (inter_subset_left _ _),
     htd.mono (subset_inter (subset_union_left _ _) hts),
     λ x hx hxs, ⟨or.inr $ or.inl hx, hxs⟩, λ x hx hxs, ⟨or.inr $ or.inr hx, hxs⟩]
 end
@@ -559,7 +559,7 @@ lemma exists_countable_basis [second_countable_topology α] :
 let ⟨b, hb₁, hb₂⟩ := second_countable_topology.is_open_generated_countable α in
 let b' := (λs, ⋂₀ s) '' {s:set (set α) | s.finite ∧ s ⊆ b ∧ (⋂₀ s).nonempty} in
 ⟨b',
-  ((countable_set_of_finite_subset hb₁).mono
+  ((countable_set_of_finite_subset hb₁).subset
     (by { simp only [← and_assoc], apply inter_subset_left })).image _,
   assume ⟨s, ⟨_, _, hn⟩, hp⟩, absurd hn (not_nonempty_iff_eq_empty.2 hp),
   is_topological_basis_of_subbasis hb₂⟩
