@@ -28,6 +28,9 @@ constructive analogue of countability. (For the most part, theorems about
 -/
 protected def countable (s : set α) : Prop := countable s
 
+protected lemma countable.nonempty_encodable {s : set α} (hs : countable s) : nonempty (encodable s) :=
+nonempty_encodable.mpr hs
+
 protected lemma countable_iff_exists_injective {s : set α} :
   s.countable ↔ ∃ f : s → ℕ, injective f :=
 countable_iff_exists_injective s
