@@ -41,6 +41,8 @@ lemma to_countable (s : set α) [countable s] : s.countable := countable_coe_iff
 lemma countable.subset {s t : set α} (ht : t.countable) (h : s ⊆ t) : s.countable :=
 by { haveI := ht.to_subtype, exact (inclusion_injective h).countable }
 
+alias countable.subset ← countable.mono
+
 lemma subsingleton.countable {s : set α} (hs : s.subsingleton) : s.countable :=
 @subsingleton.to_countable _ ((subsingleton_coe s).2 hs)
 
