@@ -1214,96 +1214,115 @@ by rw [is_irreducible, is_preirreducible_iff_subsingleton,
 
 end separation
 
-section t3
+section regular_space
 
-/-- A T₃ space is a T₀ space in which for every closed `C` and `x ∉ C`, there exist
-  disjoint open sets containing `x` and `C` respectively. -/
-class t3_space (α : Type u) [topological_space α] extends t0_space α : Prop :=
-(regular : ∀{s:set α} {a}, is_closed s → a ∉ s → ∃t, is_open t ∧ s ⊆ t ∧ 𝓝[t] a = ⊥)
+class regular_space (X : Type u) [topological_space X] : Prop :=
+(regular : ∀ {s : set X} {a}, is_closed s → a ∉ s → disjoint (𝓝ˢ s) (𝓝 a))
 
-@[priority 100] -- see Note [lower instance priority]
-instance t3_space.t1_space [t3_space α] : t1_space α :=
+variables [regular_space α] {a : α} {s : set α}
+
+lemma disjoint_nhds_set_nhds : disjoint (𝓝ˢ s) (𝓝 a) ↔ a ∉ closure s :=
 begin
-  rw t1_space_iff_exists_open,
-  intros x y hxy,
-  obtain ⟨U, hU, h⟩ := exists_is_open_xor_mem hxy,
-  cases h,
-  { exact ⟨U, hU, h⟩ },
-  { obtain ⟨R, hR, hh⟩ := t3_space.regular (is_closed_compl_iff.mpr hU) (not_not.mpr h.1),
-    obtain ⟨V, hV, hhh⟩ := mem_nhds_iff.1 (filter.inf_principal_eq_bot.1 hh.2),
-    exact ⟨R, hR, hh.1 (mem_compl h.2), hV hhh.2⟩ }
+  refine ⟨λ hd hc, _, λ h, _⟩,
+  { refine mem_closure_iff_nhds_ne_bot.mp hc _,
+    exact (flip disjoint.mono_left hd principal_le_nhds_set).symm.eq_bot },
+  { refine (regular_space.regular is_closed_closure h).mono_left _,
+    exact monotone_nhds_set subset_closure }
 end
 
-lemma nhds_is_closed [t3_space α] {a : α} {s : set α} (h : s ∈ 𝓝 a) :
-  ∃ t ∈ 𝓝 a, t ⊆ s ∧ is_closed t :=
-let ⟨s', h₁, h₂, h₃⟩ := mem_nhds_iff.mp h in
-have ∃t, is_open t ∧ s'ᶜ ⊆ t ∧ 𝓝[t] a = ⊥,
-  from t3_space.regular h₂.is_closed_compl (not_not_intro h₃),
-let ⟨t, ht₁, ht₂, ht₃⟩ := this in
-⟨tᶜ,
-  mem_of_eq_bot $ by rwa [compl_compl],
-  subset.trans (compl_subset_comm.1 ht₂) h₁,
-  is_closed_compl_iff.mpr ht₁⟩
+lemma disjoint_nhds_nhds_set : disjoint (𝓝 a) (𝓝ˢ s) ↔ a ∉ closure s :=
+disjoint.comm.trans disjoint_nhds_set_nhds
 
-lemma closed_nhds_basis [t3_space α] (a : α) :
-  (𝓝 a).has_basis (λ s : set α, s ∈ 𝓝 a ∧ is_closed s) id :=
-⟨λ t, ⟨λ t_in, let ⟨s, s_in, h_st, h⟩ := nhds_is_closed t_in in ⟨s, ⟨s_in, h⟩, h_st⟩,
-       λ ⟨s, ⟨s_in, hs⟩, hst⟩, mem_of_superset s_in hst⟩⟩
+lemma exists_mem_nhds_is_closed_subset {a : α} {s : set α} (h : s ∈ 𝓝 a) :
+  ∃ t ∈ 𝓝 a, is_closed t ∧ t ⊆ s :=
+begin
+  have : disjoint (𝓝 a) (𝓝ˢ sᶜ),
+   by rwa [disjoint_nhds_nhds_set, ← mem_compl_iff, ← interior_compl, compl_compl,
+     mem_interior_iff_mem_nhds],
+  rcases ((basis_sets _).disjoint_iff (has_basis_nhds_set _)).mp this
+    with ⟨U, hU, V, hV, hd⟩,
+  exact ⟨Vᶜ, mem_of_superset hU hd.subset_compl_right, hV.1.is_closed_compl,
+    compl_subset_comm.2 hV.2⟩
+end
 
-lemma topological_space.is_topological_basis.exists_closure_subset [t3_space α]
+lemma closed_nhds_basis (a : α) : (𝓝 a).has_basis (λ s : set α, s ∈ 𝓝 a ∧ is_closed s) id :=
+has_basis_self.2 (λ _, exists_mem_nhds_is_closed_subset)
+
+lemma lift'_nhds_closure (a : α) : (𝓝 a).lift' closure = 𝓝 a :=
+(closed_nhds_basis a).lift'_closure_eq_self (λ s hs, hs.2)
+
+lemma filter.has_basis.nhds_closure {ι : Sort*} {a : α} {p : ι → Prop} {s : ι → set α}
+  (h : (𝓝 a).has_basis p s) : (𝓝 a).has_basis p (λ i, closure (s i)) :=
+lift'_nhds_closure a ▸ h.lift'_closure
+
+lemma has_basis_nhds_closure (a : α) : (𝓝 a).has_basis (λ s, s ∈ 𝓝 a) closure :=
+(𝓝 a).basis_sets.nhds_closure
+
+lemma has_basis_opens_closure (a : α) : (𝓝 a).has_basis (λ s, a ∈ s ∧ is_open s) closure :=
+(nhds_basis_opens a).nhds_closure
+
+lemma topological_space.is_topological_basis.nhds_basis_closure
+  {B : set (set α)} (hB : topological_space.is_topological_basis B) (a : α) :
+  (𝓝 a).has_basis (λ s : set α, a ∈ s ∧ s ∈ B) closure :=
+by simpa only [and_comm] using hB.nhds_has_basis.nhds_closure
+
+lemma topological_space.is_topological_basis.exists_closure_subset
   {B : set (set α)} (hB : topological_space.is_topological_basis B) {a : α} {s : set α}
   (h : s ∈ 𝓝 a) :
   ∃ t ∈ B, a ∈ t ∧ closure t ⊆ s :=
+by simpa only [exists_prop, and.assoc] using hB.nhds_has_basis.nhds_closure.mem_iff.mp h
+
+protected lemma inducing.regular_space [topological_space β] {f : β → α}
+  (hf : inducing f) : regular_space β :=
 begin
-  rcases nhds_is_closed h with ⟨t, hat, hts, htc⟩,
-  rcases hB.mem_nhds_iff.1 hat with ⟨u, huB, hau, hut⟩,
-  exact ⟨u, huB, hau, (closure_minimal hut htc).trans hts⟩
+  refine ⟨λ s a hs ha, _⟩,
+  rcases hf.is_closed_iff.mp hs with ⟨t, ht, rfl⟩,
+  exact (hf.continuous.tendsto_nhds_set $ maps_to_preimage _ _).disjoint
+    (regular_space.regular ht ha) hf.continuous.continuous_at
 end
 
-lemma topological_space.is_topological_basis.nhds_basis_closure [t3_space α]
-  {B : set (set α)} (hB : topological_space.is_topological_basis B) (a : α) :
-  (𝓝 a).has_basis (λ s : set α, a ∈ s ∧ s ∈ B) closure :=
-⟨λ s, ⟨λ h, let ⟨t, htB, hat, hts⟩ := hB.exists_closure_subset h in ⟨t, ⟨hat, htB⟩, hts⟩,
-  λ ⟨t, ⟨hat, htB⟩, hts⟩, mem_of_superset (hB.mem_nhds htB hat) (subset_closure.trans hts)⟩⟩
+lemma regular_space_induced (f : β → α) : @regular_space β (induced f ‹_›) :=
+by { letI := induced f ‹_›, exact inducing.regular_space ⟨rfl⟩ }
+
+lemma regular_space_Inf {α : Type*} {s : set (topological_space α)} (hs : ∀ t ∈ s, @regular_space
+
+instance {p : α → Prop} : regular_space (subtype p) :=
+embedding_subtype_coe.to_inducing.regular_space
+
+end regular_space
+
+section t3
+
+/-- A T₃ space is a T₀ space which is a regular space. Any T₃ space is a T₁ space, a T₂ space, and
+a T₂.₅ space.  -/
+class t3_space (α : Type u) [topological_space α] extends t0_space α, regular_space α : Prop
+
+@[priority 100] -- see Note [lower instance priority]
+instance t3_space.t2_5_space [t3_space α] : t2_5_space α :=
+begin
+  haveI : t2_space α,
+  { refine t2_space_iff_disjoint_nhds.mpr (λ x y hne, _),
+    have : x ∉ closure {y} ∨ y ∉ closure {x},
+      from (t0_space_iff_or_not_mem_closure α).mp infer_instance x y hne,
+    wlog H : x ∉ closure {y} := this using [x y, y x] tactic.skip,
+    { rwa [← disjoint_nhds_nhds_set, nhds_set_singleton] at H },
+    { exact λ h, (this h.symm).symm } },
+  -- TODO: reformulate `t2_5_space` in terms of `(𝓝 x).lift' closure`
+  refine ⟨λ x y hne, _⟩,
+  rcases ((closed_nhds_basis x).disjoint_iff (closed_nhds_basis y)).1
+    (disjoint_nhds_nhds.mpr hne) with ⟨U, ⟨hxU, hUc⟩, V, ⟨hyV, hVc⟩, hd⟩,
+  exact ⟨interior U, interior V, is_open_interior, is_open_interior,
+    hd.mono (closure_minimal interior_subset hUc) (closure_minimal interior_subset hVc),
+    mem_interior_iff_mem_nhds.2 hxU, mem_interior_iff_mem_nhds.2 hyV⟩
+end
 
 protected lemma embedding.t3_space [topological_space β] [t3_space β] {f : α → β}
   (hf : embedding f) : t3_space α :=
 { to_t0_space := hf.t0_space,
-  regular :=
-  begin
-    intros s a hs ha,
-    rcases hf.to_inducing.is_closed_iff.1 hs with ⟨s, hs', rfl⟩,
-    rcases t3_space.regular hs' ha with ⟨t, ht, hst, hat⟩,
-    refine ⟨f ⁻¹' t, ht.preimage hf.continuous, preimage_mono hst, _⟩,
-    rw [nhds_within, hf.to_inducing.nhds_eq_comap, ← comap_principal, ← comap_inf,
-        ← nhds_within, hat, comap_bot]
-  end }
+  to_regular_space := hf.to_inducing.regular_space }
 
 instance subtype.t3_space [t3_space α] {p : α → Prop} : t3_space (subtype p) :=
 embedding_subtype_coe.t3_space
-
-variable (α)
-@[priority 100] -- see Note [lower instance priority]
-instance t3_space.t2_space [t3_space α] : t2_space α :=
-⟨λ x y hxy,
-let ⟨s, hs, hys, hxs⟩ := t3_space.regular is_closed_singleton
-    (mt mem_singleton_iff.1 hxy),
-  ⟨t, hxt, u, hsu, htu⟩ := empty_mem_iff_bot.2 hxs,
-  ⟨v, hvt, hv, hxv⟩ := mem_nhds_iff.1 hxt in
-⟨v, s, hv, hs, hxv, singleton_subset_iff.1 hys,
-  (disjoint_iff_inter_eq_empty.2 htu.symm).mono hvt hsu⟩⟩
-
-@[priority 100] -- see Note [lower instance priority]
-instance t3_space.t2_5_space [t3_space α] : t2_5_space α :=
-⟨λ x y hxy,
-let ⟨U, V, hU, hV, hh_1, hh_2, hUV⟩ := t2_separation hxy,
-  hxcV := not_not.mpr (interior_maximal hUV.subset_compl_right hU hh_1),
-  ⟨R, hR, hh⟩ := t3_space.regular is_closed_closure (by rwa closure_eq_compl_interior_compl),
-  ⟨A, hA, hhh⟩ := mem_nhds_iff.1 (filter.inf_principal_eq_bot.1 hh.2) in
-⟨A, V, hhh.1, hV, disjoint_compl_left.mono_left ((closure_minimal hA hR.is_closed_compl).trans $
-  compl_subset_compl.mpr hh.1), hhh.2, hh_2⟩⟩
-
-variable {α}
 
 /-- Given two points `x ≠ y`, we can find neighbourhoods `x ∈ V₁ ⊆ U₁` and `y ∈ V₂ ⊆ U₂`,
 with the `Vₖ` closed and the `Uₖ` open, such that the `Uₖ` are disjoint. -/
@@ -1318,6 +1337,8 @@ begin
        U₂, mem_of_superset V₂_in h₂, V₂, V₂_in],
   tauto
 end
+
+#exit
 
 /--
 In a locally compact T₃ space, given a compact set `K` inside an open set `U`, we can find a
