@@ -1325,7 +1325,7 @@ lemma regular_space_Inf {X} {T : set (topological_space X)} (h : ∀ t ∈ T, @r
   @regular_space X (Inf T) :=
 begin
   letI := Inf T,
-  have : ∀ a, (𝓝 a).has_basis 
+  have : ∀ a, (𝓝 a).has_basis
     (λ If : Σ I : set T, I → set X,
       If.1.finite ∧ ∀ i : If.1, If.2 i ∈ @nhds X i a ∧ @is_closed X i (If.2 i))
     (λ If, ⋂ i : If.1, If.snd i),
