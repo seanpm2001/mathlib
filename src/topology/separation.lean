@@ -1230,34 +1230,61 @@ end separation
 
 section regular_space
 
-class regular_space (X : Type u) [topological_space X] : Prop :=
+@[mk_iff] class regular_space (X : Type u) [topological_space X] : Prop :=
 (regular : ∀ {s : set X} {a}, is_closed s → a ∉ s → disjoint (𝓝ˢ s) (𝓝 a))
+
+lemma regular_space_tfae (X : Type u) [topological_space X] :
+  tfae [regular_space X,
+    ∀ (s : set X) (a ∉ closure s), disjoint (𝓝ˢ s) (𝓝 a),
+    ∀ (a : X) (s : set X), disjoint (𝓝ˢ s) (𝓝 a) ↔ a ∉ closure s,
+    ∀ (a : X) (s ∈ 𝓝 a), ∃ t ∈ 𝓝 a, is_closed t ∧ t ⊆ s,
+    ∀ a : X, (𝓝 a).lift' closure ≤ 𝓝 a,
+    ∀ a : X, (𝓝 a).lift' closure = 𝓝 a] :=
+begin
+  tfae_have : 1 ↔ 5,
+  { rw [regular_space_iff, (@compl_surjective (set X) _).forall, forall_swap],
+    simp only [is_closed_compl_iff, mem_compl_iff, not_not, @and_comm (_ ∈ _),
+      (nhds_basis_opens _).lift'_closure.le_basis_iff (nhds_basis_opens _), and_imp,
+      (nhds_basis_opens _).disjoint_iff_right, exists_prop, ← subset_interior_iff_mem_nhds_set,
+      interior_compl, compl_subset_compl] },
+  tfae_have : 5 → 6, from λ h a, (h a).antisymm (𝓝 _).le_lift'_closure,
+  tfae_have : 6 → 4,
+  { intros H a s hs,
+    rw [← H] at hs,
+    rcases (𝓝 a).basis_sets.lift'_closure.mem_iff.mp hs with ⟨U, hU, hUs⟩,
+    exact ⟨closure U, mem_of_superset hU subset_closure, is_closed_closure, hUs⟩ },
+  tfae_have : 4 → 2,
+  { intros H s a ha,
+    have ha' : sᶜ ∈ 𝓝 a, by rwa [← mem_interior_iff_mem_nhds, interior_compl],
+    rcases H _ _ ha' with ⟨U, hU, hUc, hUs⟩,
+    refine disjoint_of_disjoint_of_mem disjoint_compl_left _ hU,
+    rwa [← subset_interior_iff_mem_nhds_set, hUc.is_open_compl.interior_eq, subset_compl_comm] },
+  tfae_have : 2 → 3,
+  { refine λ H a s, ⟨λ hd has, mem_closure_iff_nhds_ne_bot.mp has _, H s a⟩,
+    exact (hd.symm.mono_right $ @principal_le_nhds_set _ _ s).eq_bot },
+  tfae_have : 3 → 1, from λ H, ⟨λ s a hs ha, (H _ _).mpr $ hs.closure_eq.symm ▸ ha⟩,
+  tfae_finish
+end
+
+lemma regular_space.of_lift'_closure (h : ∀ a : α, (𝓝 a).lift' closure = 𝓝 a) : regular_space α :=
+iff.mpr ((regular_space_tfae α).out 0 5) h
+
+lemma regular_space.of_basis {ι : α → Sort*} {p : Π a, ι a → Prop} {s : Π a, ι a → set α}
+  (h₁ : ∀ a, (𝓝 a).has_basis (p a) (s a)) (h₂ : ∀ a i, p a i → is_closed (s a i)) :
+  regular_space α :=
+regular_space.of_lift'_closure $ λ a, (h₁ a).lift'_closure_eq_self (h₂ a)
 
 variables [regular_space α] {a : α} {s : set α}
 
 lemma disjoint_nhds_set_nhds : disjoint (𝓝ˢ s) (𝓝 a) ↔ a ∉ closure s :=
-begin
-  refine ⟨λ hd hc, _, λ h, _⟩,
-  { refine mem_closure_iff_nhds_ne_bot.mp hc _,
-    exact (flip disjoint.mono_left hd principal_le_nhds_set).symm.eq_bot },
-  { refine (regular_space.regular is_closed_closure h).mono_left _,
-    exact monotone_nhds_set subset_closure }
-end
+iff.mp ((regular_space_tfae α).out 0 2) ‹_› _ _
 
 lemma disjoint_nhds_nhds_set : disjoint (𝓝 a) (𝓝ˢ s) ↔ a ∉ closure s :=
 disjoint.comm.trans disjoint_nhds_set_nhds
 
 lemma exists_mem_nhds_is_closed_subset {a : α} {s : set α} (h : s ∈ 𝓝 a) :
   ∃ t ∈ 𝓝 a, is_closed t ∧ t ⊆ s :=
-begin
-  have : disjoint (𝓝 a) (𝓝ˢ sᶜ),
-   by rwa [disjoint_nhds_nhds_set, ← mem_compl_iff, ← interior_compl, compl_compl,
-     mem_interior_iff_mem_nhds],
-  rcases ((basis_sets _).disjoint_iff (has_basis_nhds_set _)).mp this
-    with ⟨U, hU, V, hV, hd⟩,
-  exact ⟨Vᶜ, mem_of_superset hU hd.subset_compl_right, hV.1.is_closed_compl,
-    compl_subset_comm.2 hV.2⟩
-end
+iff.mp ((regular_space_tfae α).out 0 3) ‹_› _ _ h
 
 lemma closed_nhds_basis (a : α) : (𝓝 a).has_basis (λ s : set α, s ∈ 𝓝 a ∧ is_closed s) id :=
 has_basis_self.2 (λ _, exists_mem_nhds_is_closed_subset)
@@ -1286,22 +1313,68 @@ lemma topological_space.is_topological_basis.exists_closure_subset
   ∃ t ∈ B, a ∈ t ∧ closure t ⊆ s :=
 by simpa only [exists_prop, and.assoc] using hB.nhds_has_basis.nhds_closure.mem_iff.mp h
 
-protected lemma inducing.regular_space [topological_space β] {f : β → α}
-  (hf : inducing f) : regular_space β :=
-begin
-  refine ⟨λ s a hs ha, _⟩,
-  rcases hf.is_closed_iff.mp hs with ⟨t, ht, rfl⟩,
-  exact (hf.continuous.tendsto_nhds_set $ maps_to_preimage _ _).disjoint
-    (regular_space.regular ht ha) hf.continuous.continuous_at
-end
+protected lemma inducing.regular_space [topological_space β] {f : β → α} (hf : inducing f) :
+  regular_space β :=
+regular_space.of_basis (λ b, by { rw [hf.nhds_eq_comap b], exact (closed_nhds_basis _).comap _ }) $
+  λ b s hs, hs.2.preimage hf.continuous
 
 lemma regular_space_induced (f : β → α) : @regular_space β (induced f ‹_›) :=
 by { letI := induced f ‹_›, exact inducing.regular_space ⟨rfl⟩ }
 
-lemma regular_space_Inf {α : Type*} {s : set (topological_space α)} (hs : ∀ t ∈ s, @regular_space
+lemma regular_space_Inf {X} {T : set (topological_space X)} (h : ∀ t ∈ T, @regular_space X t) :
+  @regular_space X (Inf T) :=
+begin
+  letI := Inf T,
+  have : ∀ a, (𝓝 a).has_basis 
+    (λ If : Σ I : set T, I → set X,
+      If.1.finite ∧ ∀ i : If.1, If.2 i ∈ @nhds X i a ∧ @is_closed X i (If.2 i))
+    (λ If, ⋂ i : If.1, If.snd i),
+  { intro a,
+    rw [nhds_Inf, ← infi_subtype''],
+    exact has_basis_infi (λ t : T, @closed_nhds_basis X t (h t t.2) a) },
+  refine regular_space.of_basis this (λ a If hIf, is_closed_Inter $ λ i, _),
+  exact (hIf.2 i).2.mono (Inf_le (i : T).2)
+end
+
+lemma regular_space_infi {ι X} {t : ι → topological_space X} (h : ∀ i, @regular_space X (t i)) :
+  @regular_space X (infi t) :=
+regular_space_Inf $ forall_range_iff.mpr h
+
+lemma regular_space.inf {X} {t₁ t₂ : topological_space X} (h₁ : @regular_space X t₁)
+  (h₂ : @regular_space X t₂) : @regular_space X (t₁ ⊓ t₂) :=
+by { rw [inf_eq_infi], exact regular_space_infi (bool.forall_bool.2 ⟨h₂, h₁⟩) }
 
 instance {p : α → Prop} : regular_space (subtype p) :=
 embedding_subtype_coe.to_inducing.regular_space
+
+instance [topological_space β] [regular_space β] : regular_space (α × β) :=
+(regular_space_induced prod.fst).inf (regular_space_induced prod.snd)
+
+instance {ι : Type*} {π : ι → Type*} [Π i, topological_space (π i)] [∀ i, regular_space (π i)] :
+  regular_space (Π i, π i) :=
+regular_space_infi $ λ i, regular_space_induced _
+
+/--
+In a locally compact T₃ space, given a compact set `K` inside an open set `U`, we can find a
+compact set `K'` between these sets: `K` is inside the interior of `K'` and `K' ⊆ U`.
+-/
+lemma exists_compact_between [locally_compact_space α] {K U : set α} (hK : is_compact K)
+  (hU : is_open U) (hKU : K ⊆ U) :
+  ∃ K', is_compact K' ∧ K ⊆ interior K' ∧ K' ⊆ U :=
+begin
+  choose C hxC hC hCU using λ x : K, exists_mem_nhds_is_closed_subset (hU.mem_nhds $ hKU x.2),
+  choose L hL hxL using λ x : K, exists_compact_mem_nhds (x : α),
+  have : K ⊆ ⋃ x, interior (L x) ∩ interior (C x), from
+  λ x hx, mem_Union.mpr ⟨⟨x, hx⟩,
+    ⟨mem_interior_iff_mem_nhds.mpr (hxL _), mem_interior_iff_mem_nhds.mpr (hxC _)⟩⟩,
+  rcases hK.elim_finite_subcover _ _ this with ⟨t, ht⟩,
+  { refine ⟨⋃ x ∈ t, L x ∩ C x, t.compact_bUnion (λ x _, (hL x).inter_right (hC x)), λ x hx, _, _⟩,
+    { obtain ⟨y, hyt, hy : x ∈ interior (L y) ∩ interior (C y)⟩ := mem_Union₂.mp (ht hx),
+      rw [← interior_inter] at hy,
+      refine interior_mono (subset_bUnion_of_mem hyt) hy },
+    { simp_rw [Union_subset_iff], rintro x -, exact (inter_subset_right _ _).trans (hCU _) } },
+  { exact λ _, is_open_interior.inter is_open_interior }
+end
 
 end regular_space
 
@@ -1338,6 +1411,11 @@ protected lemma embedding.t3_space [topological_space β] [t3_space β] {f : α 
 instance subtype.t3_space [t3_space α] {p : α → Prop} : t3_space (subtype p) :=
 embedding_subtype_coe.t3_space
 
+instance [topological_space β] [t3_space α] [t3_space β] : t3_space (α × β) := ⟨⟩
+
+instance {ι : Type*} {π : ι → Type*} [Π i, topological_space (π i)] [Π i, t3_space (π i)] :
+  t3_space (Π i, π i) := ⟨⟩
+
 /-- Given two points `x ≠ y`, we can find neighbourhoods `x ∈ V₁ ⊆ U₁` and `y ∈ V₂ ⊆ U₂`,
 with the `Vₖ` closed and the `Uₖ` open, such that the `Uₖ` are disjoint. -/
 lemma disjoint_nested_nhds [t3_space α] {x y : α} (h : x ≠ y) :
@@ -1345,35 +1423,10 @@ lemma disjoint_nested_nhds [t3_space α] {x y : α} (h : x ≠ y) :
   V₁ ⊆ U₁ ∧ V₂ ⊆ U₂ ∧ disjoint U₁ U₂ :=
 begin
   rcases t2_separation h with ⟨U₁, U₂, U₁_op, U₂_op, x_in, y_in, H⟩,
-  rcases nhds_is_closed (is_open.mem_nhds U₁_op x_in) with ⟨V₁, V₁_in, h₁, V₁_closed⟩,
-  rcases nhds_is_closed (is_open.mem_nhds U₂_op y_in) with ⟨V₂, V₂_in, h₂, V₂_closed⟩,
-  use [U₁, mem_of_superset V₁_in h₁, V₁, V₁_in,
-       U₂, mem_of_superset V₂_in h₂, V₂, V₂_in],
-  tauto
-end
-
-#exit
-
-/--
-In a locally compact T₃ space, given a compact set `K` inside an open set `U`, we can find a
-compact set `K'` between these sets: `K` is inside the interior of `K'` and `K' ⊆ U`.
--/
-lemma exists_compact_between [locally_compact_space α] [t3_space α]
-  {K U : set α} (hK : is_compact K) (hU : is_open U) (hKU : K ⊆ U) :
-  ∃ K', is_compact K' ∧ K ⊆ interior K' ∧ K' ⊆ U :=
-begin
-  choose C hxC hCU hC using λ x : K, nhds_is_closed (hU.mem_nhds $ hKU x.2),
-  choose L hL hxL using λ x : K, exists_compact_mem_nhds (x : α),
-  have : K ⊆ ⋃ x, interior (L x) ∩ interior (C x), from
-  λ x hx, mem_Union.mpr ⟨⟨x, hx⟩,
-    ⟨mem_interior_iff_mem_nhds.mpr (hxL _), mem_interior_iff_mem_nhds.mpr (hxC _)⟩⟩,
-  rcases hK.elim_finite_subcover _ _ this with ⟨t, ht⟩,
-  { refine ⟨⋃ x ∈ t, L x ∩ C x, t.compact_bUnion (λ x _, (hL x).inter_right (hC x)), λ x hx, _, _⟩,
-    { obtain ⟨y, hyt, hy : x ∈ interior (L y) ∩ interior (C y)⟩ := mem_Union₂.mp (ht hx),
-      rw [← interior_inter] at hy,
-      refine interior_mono (subset_bUnion_of_mem hyt) hy },
-    { simp_rw [Union_subset_iff], rintro x -, exact (inter_subset_right _ _).trans (hCU _) } },
-  { exact λ _, is_open_interior.inter is_open_interior }
+  rcases exists_mem_nhds_is_closed_subset (U₁_op.mem_nhds x_in) with ⟨V₁, V₁_in, V₁_closed, h₁⟩,
+  rcases exists_mem_nhds_is_closed_subset (U₂_op.mem_nhds y_in) with ⟨V₂, V₂_in, V₂_closed, h₂⟩,
+  exact ⟨U₁, mem_of_superset V₁_in h₁, V₁, V₁_in, U₂, mem_of_superset V₂_in h₂, V₂, V₂_in,
+    V₁_closed, V₂_closed, U₁_op, U₂_op, h₁, h₂, H⟩
 end
 
 /--
@@ -1421,11 +1474,8 @@ end
 @[priority 100] -- see Note [lower instance priority]
 instance normal_space.t3_space [normal_space α] : t3_space α :=
 { regular := λ s x hs hxs, let ⟨u, v, hu, hv, hsu, hxv, huv⟩ :=
-    normal_separation hs is_closed_singleton
-      (λ _ ⟨hx, hy⟩, hxs $ mem_of_eq_of_mem (eq_of_mem_singleton hy).symm hx) in
-    ⟨u, hu, hsu, filter.empty_mem_iff_bot.1 $ filter.mem_inf_iff.2
-      ⟨v, is_open.mem_nhds hv (singleton_subset_iff.1 hxv), u, filter.mem_principal_self u,
-       by rwa [eq_comm, inter_comm, ← disjoint_iff_inter_eq_empty]⟩⟩ }
+    normal_separation hs is_closed_singleton (disjoint_singleton_right.mpr hxs) in
+    disjoint_of_disjoint_of_mem huv (hu.mem_nhds_set.2 hsu) (hv.mem_nhds $ hxv rfl) }
 
 -- We can't make this an instance because it could cause an instance loop.
 lemma normal_of_compact_t2 [compact_space α] [t2_space α] : normal_space α :=
