@@ -67,7 +67,7 @@ jobs:
           set -o pipefail
           leanpkg configure
           echo "::set-output name=started::true"
-          lean --json -T100000 --make src | python3 scripts/detect_errors.py
+          lean --json -T90000 --make src | python3 scripts/detect_errors.py
           lean --json -T400000 --make src | python3 scripts/detect_errors.py
 
       - name: push release to azure
