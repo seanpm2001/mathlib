@@ -422,7 +422,7 @@ martingale_iff.2
   ⟨supermartingale_of_set_integral_succ_le hadp hint $ λ i s hs, (hf i s hs).ge,
    submartingale_of_set_integral_le_succ hadp hint $ λ i s hs, (hf i s hs).le⟩
 
-lemma submartingale_of_succ
+lemma submartingale_of_le_condexp_succ
   {f : 𝕚 → Ω → ℝ} (hadp : adapted 𝒢 f) (hint : ∀ i, integrable (f i) μ)
   (hf : ∀ i, f i ≤ᵐ[μ] μ[f (order.succ i) | 𝒢 i]) :
   submartingale f 𝒢 μ :=
@@ -434,52 +434,52 @@ begin
   exact set_integral_mono_ae (hint i).integrable_on integrable_condexp.integrable_on (hf i),
 end
 
-lemma supermartingale_of_succ
+lemma supermartingale_of_condexp_succ_le
   {f : 𝕚 → Ω → ℝ} (hadp : adapted 𝒢 f) (hint : ∀ i, integrable (f i) μ)
   (hf : ∀ i, μ[f (order.succ i) | 𝒢 i] ≤ᵐ[μ] f i) :
   supermartingale f 𝒢 μ :=
 begin
   rw ← neg_neg f,
-  refine (submartingale_of_succ hadp.neg (λ i, (hint i).neg) $ λ i,
+  refine (submartingale_of_le_condexp_succ hadp.neg (λ i, (hint i).neg) $ λ i,
     eventually_le.trans _ (condexp_neg _).symm.le).neg,
   filter_upwards [hf i] with x hx using neg_le_neg hx,
 end
 
-lemma martingale_of_succ
+lemma martingale_of_eq_condexp_succ
   {f : 𝕚 → Ω → ℝ} (hadp : adapted 𝒢 f) (hint : ∀ i, integrable (f i) μ)
   (hf : ∀ i, f i =ᵐ[μ] μ[f (order.succ i) | 𝒢 i]) :
   martingale f 𝒢 μ :=
-martingale_iff.2 ⟨supermartingale_of_succ hadp hint $ λ i, (hf i).symm.le,
-  submartingale_of_succ hadp hint $ λ i, (hf i).le⟩
+martingale_iff.2 ⟨supermartingale_of_condexp_succ_le hadp hint $ λ i, (hf i).symm.le,
+  submartingale_of_le_condexp_succ hadp hint $ λ i, (hf i).le⟩
 
-lemma submartingale_of_condexp_sub_nonneg_of_succ
+lemma submartingale_of_condexp_succ_sub_nonneg
   {f : 𝕚 → Ω → ℝ} (hadp : adapted 𝒢 f) (hint : ∀ i, integrable (f i) μ)
   (hf : ∀ i, 0 ≤ᵐ[μ] μ[f (order.succ i) - f i | 𝒢 i]) :
   submartingale f 𝒢 μ :=
 begin
-  refine submartingale_of_succ hadp hint (λ i, _),
+  refine submartingale_of_le_condexp_succ hadp hint (λ i, _),
   rw [← condexp_of_strongly_measurable (𝒢.le _) (hadp _) (hint _), ← eventually_sub_nonneg],
   exact eventually_le.trans (hf i) (condexp_sub (hint _) (hint _)).le,
   apply_instance
 end
 
-lemma supermartingale_of_condexp_sub_nonneg_of_succ
+lemma supermartingale_of_condexp_sub_succ_nonneg
   {f : 𝕚 → Ω → ℝ} (hadp : adapted 𝒢 f) (hint : ∀ i, integrable (f i) μ)
   (hf : ∀ i, 0 ≤ᵐ[μ] μ[f i - f (order.succ i) | 𝒢 i]) :
   supermartingale f 𝒢 μ :=
 begin
   rw ← neg_neg f,
-  refine (submartingale_of_condexp_sub_nonneg_of_succ hadp.neg (λ i, (hint i).neg) _).neg,
+  refine (submartingale_of_condexp_succ_sub_nonneg hadp.neg (λ i, (hint i).neg) _).neg,
   simpa only [pi.zero_apply, pi.neg_apply, neg_sub_neg]
 end
 
-lemma martingale_of_condexp_sub_eq_zero_of_succ
+lemma martingale_of_condexp_succ_sub_eq_zero
   {f : 𝕚 → Ω → ℝ} (hadp : adapted 𝒢 f) (hint : ∀ i, integrable (f i) μ)
   (hf : ∀ i, μ[f (order.succ i) - f i | 𝒢 i] =ᵐ[μ] 0) :
   martingale f 𝒢 μ :=
 begin
-  refine martingale_iff.2 ⟨supermartingale_of_condexp_sub_nonneg_of_succ hadp hint $ λ i, _,
-    submartingale_of_condexp_sub_nonneg_of_succ hadp hint $ λ i, (hf i).symm.le⟩,
+  refine martingale_iff.2 ⟨supermartingale_of_condexp_sub_succ_nonneg hadp hint $ λ i, _,
+    submartingale_of_condexp_succ_sub_nonneg hadp hint $ λ i, (hf i).symm.le⟩,
   rw ← neg_sub,
   refine (eventually_eq.trans _ (condexp_neg _).symm).le,
   filter_upwards [hf i] with x hx,
@@ -496,37 +496,37 @@ lemma submartingale_nat [is_finite_measure μ]
   {f : ℕ → Ω → ℝ} (hadp : adapted 𝒢 f) (hint : ∀ i, integrable (f i) μ)
   (hf : ∀ i, f i ≤ᵐ[μ] μ[f (order.succ i) | 𝒢 i]) :
   submartingale f 𝒢 μ :=
-submartingale_of_succ hadp hint hf
+submartingale_of_le_condexp_succ hadp hint hf
 
 lemma supermartingale_nat [is_finite_measure μ]
   {f : ℕ → Ω → ℝ} (hadp : adapted 𝒢 f) (hint : ∀ i, integrable (f i) μ)
   (hf : ∀ i, μ[f (i + 1) | 𝒢 i] ≤ᵐ[μ] f i) :
   supermartingale f 𝒢 μ :=
-supermartingale_of_succ hadp hint hf
+supermartingale_of_condexp_succ_le hadp hint hf
 
 lemma martingale_nat [is_finite_measure μ]
   {f : ℕ → Ω → ℝ} (hadp : adapted 𝒢 f) (hint : ∀ i, integrable (f i) μ)
   (hf : ∀ i, f i =ᵐ[μ] μ[f (i + 1) | 𝒢 i]) :
   martingale f 𝒢 μ :=
-martingale_of_succ hadp hint hf
+martingale_of_eq_condexp_succ hadp hint hf
 
 lemma submartingale_of_condexp_sub_nonneg_nat [is_finite_measure μ]
   {f : ℕ → Ω → ℝ} (hadp : adapted 𝒢 f) (hint : ∀ i, integrable (f i) μ)
   (hf : ∀ i, 0 ≤ᵐ[μ] μ[f (i + 1) - f i | 𝒢 i]) :
   submartingale f 𝒢 μ :=
-submartingale_of_condexp_sub_nonneg_of_succ hadp hint hf
+submartingale_of_condexp_succ_sub_nonneg hadp hint hf
 
 lemma supermartingale_of_condexp_sub_nonneg_nat [is_finite_measure μ]
   {f : ℕ → Ω → ℝ} (hadp : adapted 𝒢 f) (hint : ∀ i, integrable (f i) μ)
   (hf : ∀ i, 0 ≤ᵐ[μ] μ[f i - f (i + 1) | 𝒢 i]) :
   supermartingale f 𝒢 μ :=
-supermartingale_of_condexp_sub_nonneg_of_succ hadp hint hf
+supermartingale_of_condexp_sub_succ_nonneg hadp hint hf
 
 lemma martingale_of_condexp_sub_eq_zero_nat [is_finite_measure μ]
   {f : ℕ → Ω → ℝ} (hadp : adapted 𝒢 f) (hint : ∀ i, integrable (f i) μ)
   (hf : ∀ i, μ[f (i + 1) - f i | 𝒢 i] =ᵐ[μ] 0) :
   martingale f 𝒢 μ :=
-martingale_of_condexp_sub_eq_zero_of_succ hadp hint hf
+martingale_of_condexp_succ_sub_eq_zero hadp hint hf
 
 namespace submartingale
 
