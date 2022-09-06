@@ -718,7 +718,9 @@ begin
     exact (hξ.strongly_measurable_le hi.le).mul
       ((hf.adapted.strongly_measurable_le (nat.succ_le_of_lt hi)).sub
       (hf.adapted.strongly_measurable_le hi.le)) },
-  refine submartingale_of_condexp_sub_nonneg_nat hadp hint (λ i, _),
+  refine submartingale_of_condexp_succ_sub_nonneg hadp hint (λ i, _),
+  change 0 ≤ᵐ[μ] μ[∑ k in finset.range (i + 1), ξ k * (f (k + 1) - f k)
+    - ∑ k in finset.range i, ξ k * (f (k + 1) - f k) | 𝒢 i],
   simp only [← finset.sum_Ico_eq_sub _ (nat.le_succ _), finset.sum_apply, pi.mul_apply,
     pi.sub_apply, nat.Ico_succ_singleton, finset.sum_singleton],
   exact eventually_le.trans (eventually_le.mul_nonneg (eventually_of_forall (hnonneg _))
