@@ -492,42 +492,6 @@ section nat
 
 variables {𝒢 : filtration ℕ m0}
 
-lemma submartingale_nat [is_finite_measure μ]
-  {f : ℕ → Ω → ℝ} (hadp : adapted 𝒢 f) (hint : ∀ i, integrable (f i) μ)
-  (hf : ∀ i, f i ≤ᵐ[μ] μ[f (order.succ i) | 𝒢 i]) :
-  submartingale f 𝒢 μ :=
-submartingale_of_le_condexp_succ hadp hint hf
-
-lemma supermartingale_nat [is_finite_measure μ]
-  {f : ℕ → Ω → ℝ} (hadp : adapted 𝒢 f) (hint : ∀ i, integrable (f i) μ)
-  (hf : ∀ i, μ[f (i + 1) | 𝒢 i] ≤ᵐ[μ] f i) :
-  supermartingale f 𝒢 μ :=
-supermartingale_of_condexp_succ_le hadp hint hf
-
-lemma martingale_nat [is_finite_measure μ]
-  {f : ℕ → Ω → ℝ} (hadp : adapted 𝒢 f) (hint : ∀ i, integrable (f i) μ)
-  (hf : ∀ i, f i =ᵐ[μ] μ[f (i + 1) | 𝒢 i]) :
-  martingale f 𝒢 μ :=
-martingale_of_eq_condexp_succ hadp hint hf
-
-lemma submartingale_of_condexp_sub_nonneg_nat [is_finite_measure μ]
-  {f : ℕ → Ω → ℝ} (hadp : adapted 𝒢 f) (hint : ∀ i, integrable (f i) μ)
-  (hf : ∀ i, 0 ≤ᵐ[μ] μ[f (i + 1) - f i | 𝒢 i]) :
-  submartingale f 𝒢 μ :=
-submartingale_of_condexp_succ_sub_nonneg hadp hint hf
-
-lemma supermartingale_of_condexp_sub_nonneg_nat [is_finite_measure μ]
-  {f : ℕ → Ω → ℝ} (hadp : adapted 𝒢 f) (hint : ∀ i, integrable (f i) μ)
-  (hf : ∀ i, 0 ≤ᵐ[μ] μ[f i - f (i + 1) | 𝒢 i]) :
-  supermartingale f 𝒢 μ :=
-supermartingale_of_condexp_sub_succ_nonneg hadp hint hf
-
-lemma martingale_of_condexp_sub_eq_zero_nat [is_finite_measure μ]
-  {f : ℕ → Ω → ℝ} (hadp : adapted 𝒢 f) (hint : ∀ i, integrable (f i) μ)
-  (hf : ∀ i, μ[f (i + 1) - f i | 𝒢 i] =ᵐ[μ] 0) :
-  martingale f 𝒢 μ :=
-martingale_of_condexp_succ_sub_eq_zero hadp hint hf
-
 namespace submartingale
 
 lemma integrable_stopped_value [has_le E] {f : ℕ → Ω → E} (hf : submartingale f 𝒢 μ) {τ : Ω → ℕ}
