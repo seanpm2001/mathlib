@@ -90,6 +90,9 @@ abbreviation order_iso (α β : Type*) [has_le α] [has_le β] := @rel_iso α β
 
 infix ` ≃o `:25 := order_iso
 
+section
+set_option old_structure_cmd true
+
 /-- `order_hom_class F α b` asserts that `F` is a type of `≤`-preserving morphisms. -/
 abbreviation order_hom_class (F : Type*) (α β : out_param Type*) [has_le α] [has_le β] :=
 rel_hom_class F ((≤) : α → α → Prop) ((≤) : β → β → Prop)
@@ -100,6 +103,8 @@ You should extend this class when you extend `order_iso`. -/
 class order_iso_class (F : Type*) (α β : out_param Type*) [has_le α] [has_le β]
   extends equiv_like F α β :=
 (map_le_map_iff (f : F) {a b : α} : f a ≤ f b ↔ a ≤ b)
+
+end
 
 export order_iso_class (map_le_map_iff)
 
@@ -175,10 +180,8 @@ lemma ext (f g : α →o β) (h : (f : α → β) = g) : f = g := fun_like.coe_i
 lemma coe_eq (f : α →o β) : coe f = f := by ext ; refl
 
 /-- One can lift an unbundled monotone function to a bundled one. -/
-instance : can_lift (α → β) (α →o β) :=
-{ coe := coe_fn,
-  cond := monotone,
-  prf := λ f h, ⟨⟨f, h⟩, rfl⟩ }
+instance : can_lift (α → β) (α →o β) coe_fn monotone :=
+{ prf := λ f h, ⟨⟨f, h⟩, rfl⟩ }
 
 /-- Copy of an `order_hom` with a new `to_fun` equal to the old one. Useful to fix definitional
 equalities. -/

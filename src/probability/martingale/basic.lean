@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rémy Degenne, Kexing Ying
 -/
 import probability.notation
-import probability.hitting_time
+import probability.process.hitting_time
 
 /-!
 # Martingales
@@ -47,24 +47,36 @@ variables {Ω E ι : Type*} [preorder ι]
 
 /-- A family of functions `f : ι → Ω → E` is a martingale with respect to a filtration `ℱ` if `f`
 is adapted with respect to `ℱ` and for all `i ≤ j`, `μ[f j | ℱ i] =ᵐ[μ] f i`. -/
-def martingale (f : ι → Ω → E) (ℱ : filtration ι m0) (μ : measure Ω) : Prop :=
+def martingale (f : ι → Ω → E) (ℱ : filtration ι m0) (μ : measure Ω . volume_tac) : Prop :=
 adapted ℱ f ∧ ∀ i j, i ≤ j → μ[f j | ℱ i] =ᵐ[μ] f i
 
 /-- A family of integrable functions `f : ι → Ω → E` is a supermartingale with respect to a
 filtration `ℱ` if `f` is adapted with respect to `ℱ` and for all `i ≤ j`,
 `μ[f j | ℱ.le i] ≤ᵐ[μ] f i`. -/
-def supermartingale [has_le E] (f : ι → Ω → E) (ℱ : filtration ι m0) (μ : measure Ω) : Prop :=
+def supermartingale [has_le E] (f : ι → Ω → E) (ℱ : filtration ι m0) (μ : measure Ω . volume_tac) :
+  Prop :=
 adapted ℱ f ∧ (∀ i j, i ≤ j → μ[f j | ℱ i] ≤ᵐ[μ] f i) ∧ ∀ i, integrable (f i) μ
 
 /-- A family of integrable functions `f : ι → Ω → E` is a submartingale with respect to a
 filtration `ℱ` if `f` is adapted with respect to `ℱ` and for all `i ≤ j`,
 `f i ≤ᵐ[μ] μ[f j | ℱ.le i]`. -/
-def submartingale [has_le E] (f : ι → Ω → E) (ℱ : filtration ι m0) (μ : measure Ω) : Prop :=
+def submartingale [has_le E] (f : ι → Ω → E) (ℱ : filtration ι m0) (μ : measure Ω . volume_tac) :
+  Prop :=
 adapted ℱ f ∧ (∀ i j, i ≤ j → f i ≤ᵐ[μ] μ[f j | ℱ i]) ∧ ∀ i, integrable (f i) μ
 
 lemma martingale_const (ℱ : filtration ι m0) (μ : measure Ω) [is_finite_measure μ] (x : E) :
   martingale (λ _ _, x) ℱ μ :=
 ⟨adapted_const ℱ _, λ i j hij, by rw condexp_const (ℱ.le _)⟩
+
+lemma martingale_const_fun [order_bot ι]
+  (ℱ : filtration ι m0) (μ : measure Ω) [is_finite_measure μ]
+  {f : Ω → E} (hf : strongly_measurable[ℱ ⊥] f) (hfint : integrable f μ) :
+  martingale (λ _, f) ℱ μ :=
+begin
+  refine ⟨λ i, hf.mono $ ℱ.mono bot_le, λ i j hij, _⟩,
+  rw condexp_of_strongly_measurable (ℱ.le _) (hf.mono $ ℱ.mono bot_le) hfint,
+  apply_instance,
+end
 
 variables (E)
 lemma martingale_zero (ℱ : filtration ι m0) (μ : measure Ω) :
@@ -549,43 +561,21 @@ lemma submartingale_of_expected_stopped_value_mono [is_finite_measure μ]
     μ[stopped_value f τ] ≤ μ[stopped_value f π]) :
   submartingale f 𝒢 μ :=
 begin
-  refine submartingale_of_set_integral_le hadp hint (λ i j hij s hs, _),
-  classical,
-  specialize hf (s.piecewise (λ _, i) (λ _, j)) _
-    (is_stopping_time_piecewise_const hij hs)
-    (is_stopping_time_const 𝒢 j) (λ x, (ite_le_sup _ _ _).trans (max_eq_right hij).le)
-    ⟨j, λ x, le_rfl⟩,
-  rwa [stopped_value_const, stopped_value_piecewise_const,
-    integral_piecewise (𝒢.le _ _ hs) (hint _).integrable_on (hint _).integrable_on,
-    ← integral_add_compl (𝒢.le _ _ hs) (hint j), add_le_add_iff_right] at hf,
+  induction n with k ih,
+  { refl },
+  { exact ((germ.coe_eq.mp $ congr_arg coe $ condexp_of_strongly_measurable (𝒢.le _) (hfadp _) $
+      hfmgle.integrable _).symm.trans_le (hfmgle.2.1 k (k + 1) k.le_succ)).trans ih }
 end
 
-/-- **The optional stopping theorem** (fair game theorem): an adapted integrable process `f`
-is a submartingale if and only if for all bounded stopping times `τ` and `π` such that `τ ≤ π`, the
-stopped value of `f` at `τ` has expectation smaller than its stopped value at `π`. -/
-lemma submartingale_iff_expected_stopped_value_mono [is_finite_measure μ]
-  {f : ℕ → Ω → ℝ} (hadp : adapted 𝒢 f) (hint : ∀ i, integrable (f i) μ) :
-  submartingale f 𝒢 μ ↔
-  ∀ τ π : Ω → ℕ, is_stopping_time 𝒢 τ → is_stopping_time 𝒢 π → τ ≤ π → (∃ N, ∀ x, π x ≤ N) →
-    μ[stopped_value f τ] ≤ μ[stopped_value f π] :=
-⟨λ hf _ _ hτ hπ hle ⟨N, hN⟩, hf.expected_stopped_value_mono hτ hπ hle hN,
- submartingale_of_expected_stopped_value_mono hadp hint⟩
-
-/-- The stopped process of a submartingale with respect to a stopping time is a submartingale. -/
-@[protected]
-lemma submartingale.stopped_process [is_finite_measure μ]
-  {f : ℕ → Ω → ℝ} (h : submartingale f 𝒢 μ) {τ : Ω → ℕ} (hτ : is_stopping_time 𝒢 τ) :
-  submartingale (stopped_process f τ) 𝒢 μ :=
+/-- A predictable martingale is a.e. equal to its initial state. -/
+lemma martingale.eq_zero_of_predicatable [sigma_finite_filtration μ 𝒢]
+  {f : ℕ → Ω → E} (hfmgle : martingale f 𝒢 μ) (hfadp : adapted 𝒢 (λ n, f (n + 1))) (n : ℕ) :
+  f n =ᵐ[μ] f 0 :=
 begin
-  rw submartingale_iff_expected_stopped_value_mono,
-  { intros σ π hσ hπ hσ_le_π hπ_bdd,
-    simp_rw stopped_value_stopped_process,
-    obtain ⟨n, hπ_le_n⟩ := hπ_bdd,
-    exact h.expected_stopped_value_mono (hσ.min hτ) (hπ.min hτ)
-      (λ ω, min_le_min (hσ_le_π ω) le_rfl) (λ ω, (min_le_left _ _).trans (hπ_le_n ω)), },
-  { exact adapted.stopped_process_of_nat h.adapted hτ, },
-  { exact λ i, integrable_stopped_value ((is_stopping_time_const _ i).min hτ) (h.integrable)
-    (λ ω, min_le_left _ _), },
+  induction n with k ih,
+  { refl },
+  { exact ((germ.coe_eq.mp (congr_arg coe $ condexp_of_strongly_measurable (𝒢.le _) (hfadp _)
+      (hfmgle.integrable _))).symm.trans (hfmgle.2 k (k + 1) k.le_succ)).trans ih }
 end
 
 section maximal
@@ -704,7 +694,7 @@ begin
     end
 end
 
-end maximal
+end submartingale
 
 lemma submartingale.sum_mul_sub [is_finite_measure μ] {R : ℝ} {ξ f : ℕ → Ω → ℝ}
   (hf : submartingale f 𝒢 μ) (hξ : adapted 𝒢 ξ)
