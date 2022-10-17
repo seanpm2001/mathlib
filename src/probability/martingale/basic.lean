@@ -323,8 +323,8 @@ begin
 end
 
 lemma submartingale_iff_condexp_sub_nonneg [is_finite_measure μ] {f : ι → Ω → ℝ} :
-  submartingale f ℱ μ ↔ adapted ℱ f ∧ (∀ i, integrable (f i) μ) ∧ ∀ i j, i ≤ j →
-  0 ≤ᵐ[μ] μ[f j - f i | ℱ i] :=
+  submartingale f ℱ μ
+    ↔ adapted ℱ f ∧ (∀ i, integrable (f i) μ) ∧ ∀ i j, i ≤ j → 0 ≤ᵐ[μ] μ[f j - f i | ℱ i] :=
 ⟨λ h, ⟨h.adapted, h.integrable, λ i j, h.condexp_sub_nonneg⟩,
  λ ⟨hadp, hint, h⟩, submartingale_of_condexp_sub_nonneg hadp hint h⟩
 
@@ -398,8 +398,7 @@ variables {𝕚 : Type*} [linear_order 𝕚] [succ_order 𝕚] [is_succ_archimed
 
 lemma submartingale_of_set_integral_le_succ {f : 𝕚 → Ω → ℝ}
    (hadp : adapted 𝒢 f) (hint : ∀ i, integrable (f i) μ)
-  (hf : ∀ i, ∀ s : set Ω, measurable_set[𝒢 i] s
-    → ∫ ω in s, f i ω ∂μ ≤ ∫ ω in s, f (order.succ i) ω ∂μ) :
+  (hf : ∀ i, ∀ s, measurable_set[𝒢 i] s → ∫ ω in s, f i ω ∂μ ≤ ∫ ω in s, f (order.succ i) ω ∂μ) :
   submartingale f 𝒢 μ :=
 begin
   refine submartingale_of_set_integral_le hadp hint (λ i j hij s hs, _),
@@ -416,8 +415,7 @@ end
 
 lemma supermartingale_of_set_integral_succ_le
   {f : 𝕚 → Ω → ℝ} (hadp : adapted 𝒢 f) (hint : ∀ i, integrable (f i) μ)
-  (hf : ∀ i, ∀ s : set Ω, measurable_set[𝒢 i] s
-    → ∫ ω in s, f (order.succ i) ω ∂μ ≤ ∫ ω in s, f i ω ∂μ) :
+  (hf : ∀ i, ∀ s, measurable_set[𝒢 i] s → ∫ ω in s, f (order.succ i) ω ∂μ ≤ ∫ ω in s, f i ω ∂μ) :
   supermartingale f 𝒢 μ :=
 begin
   rw ← neg_neg f,
@@ -427,8 +425,7 @@ end
 
 lemma martingale_of_set_integral_eq_succ
   {f : 𝕚 → Ω → ℝ} (hadp : adapted 𝒢 f) (hint : ∀ i, integrable (f i) μ)
-  (hf : ∀ i, ∀ s : set Ω, measurable_set[𝒢 i] s
-    → ∫ ω in s, f i ω ∂μ = ∫ ω in s, f (order.succ i) ω ∂μ) :
+  (hf : ∀ i, ∀ s, measurable_set[𝒢 i] s → ∫ ω in s, f i ω ∂μ = ∫ ω in s, f (order.succ i) ω ∂μ) :
   martingale f 𝒢 μ :=
 martingale_iff.2
   ⟨supermartingale_of_set_integral_succ_le hadp hint $ λ i s hs, (hf i s hs).ge,
@@ -515,12 +512,10 @@ section nat
 
 variables {𝒢 : filtration ℕ m0}
 
-namespace submartingale
-
 -- Note that one cannot use `submartingale.zero_le_of_predictable` to prove the other two
 -- corresponding lemmas without imposing more restrictions to the ordering of `E`
 /-- A predictable submartingale is a.e. greater equal than its initial state. -/
-lemma zero_le_of_predictable [preorder E] [sigma_finite_filtration μ 𝒢]
+lemma submartingale.zero_le_of_predictable [preorder E] [sigma_finite_filtration μ 𝒢]
   {f : ℕ → Ω → E} (hfmgle : submartingale f 𝒢 μ) (hfadp : adapted 𝒢 (λ n, f (n + 1))) (n : ℕ) :
   f 0 ≤ᵐ[μ] f n :=
 begin
@@ -531,7 +526,7 @@ begin
 end
 
 /-- A predictable supermartingale is a.e. less equal than its initial state. -/
-lemma le_zero_of_predictable [preorder E] [sigma_finite_filtration μ 𝒢]
+lemma supermartingale.le_zero_of_predictable [preorder E] [sigma_finite_filtration μ 𝒢]
   {f : ℕ → Ω → E} (hfmgle : supermartingale f 𝒢 μ) (hfadp : adapted 𝒢 (λ n, f (n + 1))) (n : ℕ) :
   f n ≤ᵐ[μ] f 0 :=
 begin
@@ -541,10 +536,8 @@ begin
       hfmgle.integrable _).symm.trans_le (hfmgle.2.1 k (k + 1) k.le_succ)).trans ih }
 end
 
-end submartingale
-
 /-- A predictable martingale is a.e. equal to its initial state. -/
-lemma martingale.eq_zero_of_predicatable [sigma_finite_filtration μ 𝒢]
+lemma martingale.eq_zero_of_predictable [sigma_finite_filtration μ 𝒢]
   {f : ℕ → Ω → E} (hfmgle : martingale f 𝒢 μ) (hfadp : adapted 𝒢 (λ n, f (n + 1))) (n : ℕ) :
   f n =ᵐ[μ] f 0 :=
 begin
