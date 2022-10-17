@@ -517,39 +517,6 @@ variables {𝒢 : filtration ℕ m0}
 
 namespace submartingale
 
--- We may generalize the below lemma to functions taking value in a `normed_lattice_add_comm_group`.
--- Similarly, generalize `(super/)submartingale.set_integral_le`.
-
-/-- Given a submartingale `f` and bounded stopping times `τ` and `π` such that `τ ≤ π`, the
-expectation of `stopped_value f τ` is less than or equal to the expectation of `stopped_value f π`.
-This is the forward direction of the optional stopping theorem. -/
-lemma expected_stopped_value_mono [sigma_finite_filtration μ 𝒢]
-  {f : ℕ → Ω → ℝ} (hf : submartingale f 𝒢 μ) {τ π : Ω → ℕ}
-  (hτ : is_stopping_time 𝒢 τ) (hπ : is_stopping_time 𝒢 π) (hle : τ ≤ π)
-  {N : ℕ} (hbdd : ∀ ω, π ω ≤ N) :
-  μ[stopped_value f τ] ≤ μ[stopped_value f π] :=
-begin
-  rw [← sub_nonneg, ← integral_sub', stopped_value_sub_eq_sum' hle hbdd],
-  { simp only [finset.sum_apply],
-    have : ∀ i, measurable_set[𝒢 i] {ω : Ω | τ ω ≤ i ∧ i < π ω},
-    { intro i,
-      refine (hτ i).inter _,
-      convert (hπ i).compl,
-      ext x,
-      simpa },
-    rw integral_finset_sum,
-    { refine finset.sum_nonneg (λ i hi, _),
-      rw [integral_indicator (𝒢.le _ _ (this _)), integral_sub', sub_nonneg],
-      { exact hf.set_integral_le (nat.le_succ i) (this _) },
-      { exact (hf.integrable _).integrable_on },
-      { exact (hf.integrable _).integrable_on } },
-    intros i hi,
-    exact integrable.indicator (integrable.sub (hf.integrable _) (hf.integrable _))
-      (𝒢.le _ _ (this _)) },
-  { exact hf.integrable_stopped_value hπ hbdd },
-  { exact hf.integrable_stopped_value hτ (λ ω, le_trans (hle ω) (hbdd ω)) }
-end
-
 end submartingale
 
 /-- A predictable martingale is a.e. equal to its initial state. -/
