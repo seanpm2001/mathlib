@@ -517,6 +517,30 @@ variables {𝒢 : filtration ℕ m0}
 
 namespace submartingale
 
+-- Note that one cannot use `submartingale.zero_le_of_predictable` to prove the other two
+-- corresponding lemmas without imposing more restrictions to the ordering of `E`
+/-- A predictable submartingale is a.e. greater equal than its initial state. -/
+lemma zero_le_of_predictable [preorder E] [sigma_finite_filtration μ 𝒢]
+  {f : ℕ → Ω → E} (hfmgle : submartingale f 𝒢 μ) (hfadp : adapted 𝒢 (λ n, f (n + 1))) (n : ℕ) :
+  f 0 ≤ᵐ[μ] f n :=
+begin
+  induction n with k ih,
+  { refl },
+  { exact ih.trans ((hfmgle.2.1 k (k + 1) k.le_succ).trans_eq $ germ.coe_eq.mp $ congr_arg coe $
+      condexp_of_strongly_measurable (𝒢.le _) (hfadp _) $ hfmgle.integrable _) }
+end
+
+/-- A predictable supermartingale is a.e. less equal than its initial state. -/
+lemma le_zero_of_predictable [preorder E] [sigma_finite_filtration μ 𝒢]
+  {f : ℕ → Ω → E} (hfmgle : supermartingale f 𝒢 μ) (hfadp : adapted 𝒢 (λ n, f (n + 1))) (n : ℕ) :
+  f n ≤ᵐ[μ] f 0 :=
+begin
+  induction n with k ih,
+  { refl },
+  { exact ((germ.coe_eq.mp $ congr_arg coe $ condexp_of_strongly_measurable (𝒢.le _) (hfadp _) $
+      hfmgle.integrable _).symm.trans_le (hfmgle.2.1 k (k + 1) k.le_succ)).trans ih }
+end
+
 end submartingale
 
 /-- A predictable martingale is a.e. equal to its initial state. -/
