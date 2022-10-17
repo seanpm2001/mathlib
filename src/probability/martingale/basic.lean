@@ -488,16 +488,22 @@ end
 
 end succ_order
 
+section locally_finite_order
+
+lemma submartingale.integrable_stopped_value {ι} [partial_order ι] [locally_finite_order_bot ι]
+  {𝒢 : filtration ι m0} [has_le E] {f : ι → Ω → E}
+  (hf : submartingale f 𝒢 μ) {τ : Ω → ι}
+  (hτ : is_stopping_time 𝒢 τ) {N : ι} (hbdd : ∀ ω, τ ω ≤ N) :
+  integrable (stopped_value f τ) μ :=
+integrable_stopped_value hτ hf.integrable hbdd
+
+end locally_finite_order
+
 section nat
 
 variables {𝒢 : filtration ℕ m0}
 
 namespace submartingale
-
-lemma integrable_stopped_value [has_le E] {f : ℕ → Ω → E} (hf : submartingale f 𝒢 μ) {τ : Ω → ℕ}
-  (hτ : is_stopping_time 𝒢 τ) {N : ℕ} (hbdd : ∀ ω, τ ω ≤ N) :
-  integrable (stopped_value f τ) μ :=
-integrable_stopped_value hτ hf.integrable hbdd
 
 -- We may generalize the below lemma to functions taking value in a `normed_lattice_add_comm_group`.
 -- Similarly, generalize `(super/)submartingale.set_integral_le`.
