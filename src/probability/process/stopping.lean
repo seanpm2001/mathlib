@@ -1000,6 +1000,43 @@ section
 variables [linear_order ι] [locally_finite_order ι] [succ_order ι]  -- todo remove succ_order
   {f : filtration ι m} {u : ι → Ω → β} {τ π : Ω → ι}
 
+lemma finset.image_succ_Ico {α} [preorder α] [succ_order α] [locally_finite_order α]
+  [is_succ_archimedean α] [no_max_order α] (a b : α) :
+  finset.image succ (finset.Ico a b) = finset.Ioc a b :=
+begin
+  ext1 i,
+  simp_rw [finset.mem_image, finset.mem_Ico, finset.mem_Ioc],
+  refine ⟨λ h, _, λ h, _⟩,
+  { obtain ⟨j, ⟨hja, hjb⟩, hj_succ⟩ := h,
+    rw ← hj_succ,
+    refine ⟨hja.trans_lt (order.lt_succ j), order.succ_le_of_lt hjb⟩, },
+  { obtain ⟨n, hn⟩ : ∃ n, succ^[n] a = i := has_le.le.exists_succ_iterate h.1.le,
+    refine ⟨succ^[n-1] a, ⟨le_succ_iterate (n-1) a, _⟩, _⟩,
+    { sorry, },
+    { change (succ ∘ (succ^[n-1])) a = i,
+      rw ← function.iterate_succ',
+      rw ← hn,
+      congr,  -- todo prove 0 < n
+      sorry, }, },
+end
+
+lemma finset.sum_Ico_succ {α β} [linear_order α] [succ_order α] [locally_finite_order α]
+  [is_succ_archimedean α] [no_max_order α] [add_comm_monoid β]
+  {f : α → β} {a b : α} :
+  ∑ i in finset.Ico a b, f (order.succ i) = ∑ i in finset.Ioc a b, f i :=
+begin
+  rw ← @finset.sum_image _ _ _ f _ _ _ succ (λ x hx y hy hxy, succ_injective hxy),
+  rw finset.image_succ_Ico a b,
+end
+
+lemma finset.sum_Ico_sub {α β} [preorder α] [succ_order α] [locally_finite_order α]
+  [subtraction_comm_monoid β]
+  {f : α → β} {a b : α} :
+  ∑ i in finset.Ico a b, (f (order.succ i) - f i) = f (order.succ b) - f a :=
+begin
+  rw finset.sum_sub_distrib,
+end
+
 lemma stopped_value_sub_eq_sum [add_comm_group β] (hle : τ ≤ π) :
   stopped_value u π - stopped_value u τ =
   λ ω, (∑ i in finset.Ico (τ ω) (π ω), (u (order.succ i) - u i)) ω :=
@@ -1027,16 +1064,20 @@ end
 
 section add_comm_monoid
 
-variables [add_comm_monoid β]
-
-/-- TODO -/
-lemma adapted.stopped_process [no_max_order ι] [order_bot ι]
+variables [add_comm_monoid β] [topological_space β] [has_continuous_add β]
+  [no_max_order ι] [order_bot ι]
   [topological_space ι] [second_countable_topology ι] [order_topology ι] [metrizable_space ι]
   [measurable_space ι] [borel_space ι]
-  [topological_space β] [has_continuous_add β]
-  (hu : adapted f u) (hτ : is_stopping_time f τ) :
+
+/-- TODO -/
+lemma adapted.stopped_process (hu : adapted f u) (hτ : is_stopping_time f τ) :
   adapted f (stopped_process u τ) :=
 (hu.prog_measurable.stopped_process hτ).adapted
+
+lemma adapted.strongly_measurable_stopped_process
+  (hu : adapted f u) (hτ : is_stopping_time f τ) (n : ι) :
+  strongly_measurable (stopped_process u τ n) :=
+hu.prog_measurable.strongly_measurable_stopped_process hτ n
 
 end add_comm_monoid
 
@@ -1088,7 +1129,7 @@ lemma adapted.strongly_measurable_stopped_process_of_nat [topological_space β]
   [has_continuous_add β]
   (hτ : is_stopping_time f τ) (hu : adapted f u) (n : ℕ) :
   strongly_measurable (stopped_process u τ n) :=
-hu.prog_measurable_of_nat.strongly_measurable_stopped_process hτ n
+hu.strongly_measurable_stopped_process hτ n
 
 lemma stopped_value_eq {N : ℕ} (hbdd : ∀ ω, τ ω ≤ N) :
   stopped_value u τ =
