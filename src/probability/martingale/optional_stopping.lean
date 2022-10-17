@@ -29,7 +29,9 @@ open_locale nnreal ennreal measure_theory probability_theory
 namespace measure_theory
 
 variables {Ω ι : Type*} {m0 : measurable_space Ω} {μ : measure Ω}
-  [preorder ι] {ℱ : filtration ι m0} {f : ι → Ω → ℝ} {τ' π' : Ω → ι}
+  [linear_order ι] [locally_finite_order ι] [order_bot ι] -- ι is a subset of ℕ
+  [succ_order ι] -- todo remove, this is implied by linear + locally finite
+  {ℱ : filtration ι m0} {f : ι → Ω → ℝ} {τ' π' : Ω → ι}
   {𝒢 : filtration ℕ m0} {g : ℕ → Ω → ℝ} {τ π : Ω → ℕ}
 
 -- We may generalize the below lemma to functions taking value in a `normed_lattice_add_comm_group`.
@@ -38,14 +40,14 @@ variables {Ω ι : Type*} {m0 : measurable_space Ω} {μ : measure Ω}
 /-- Given a submartingale `f` and bounded stopping times `τ` and `π` such that `τ ≤ π`, the
 expectation of `stopped_value f τ` is less than or equal to the expectation of `stopped_value f π`.
 This is the forward direction of the optional stopping theorem. -/
-lemma submartingale.expected_stopped_value_mono [sigma_finite_filtration μ 𝒢]
-  (hf : submartingale g 𝒢 μ) (hτ : is_stopping_time 𝒢 τ) (hπ : is_stopping_time 𝒢 π) (hle : τ ≤ π)
-  {N : ℕ} (hbdd : ∀ ω, π ω ≤ N) :
-  μ[stopped_value g τ] ≤ μ[stopped_value g π] :=
+lemma submartingale.expected_stopped_value_mono [sigma_finite_filtration μ ℱ]
+  (hf : submartingale f ℱ μ) (hτ : is_stopping_time ℱ τ') (hπ : is_stopping_time ℱ π')
+  (hle : τ' ≤ π') {N : ι} (hbdd : ∀ ω, π' ω ≤ N) :
+  μ[stopped_value f τ'] ≤ μ[stopped_value f π'] :=
 begin
   rw [← sub_nonneg, ← integral_sub', stopped_value_sub_eq_sum' hle hbdd],
   { simp only [finset.sum_apply],
-    have : ∀ i, measurable_set[𝒢 i] {ω : Ω | τ ω ≤ i ∧ i < π ω},
+    have : ∀ i, measurable_set[ℱ i] {ω : Ω | τ' ω ≤ i ∧ i < π' ω},
     { intro i,
       refine (hτ i).inter _,
       convert (hπ i).compl,
@@ -53,13 +55,13 @@ begin
       simpa },
     rw integral_finset_sum,
     { refine finset.sum_nonneg (λ i hi, _),
-      rw [integral_indicator (𝒢.le _ _ (this _)), integral_sub', sub_nonneg],
-      { exact hf.set_integral_le (nat.le_succ i) (this _) },
+      rw [integral_indicator (ℱ.le _ _ (this _)), integral_sub', sub_nonneg],
+      { exact hf.set_integral_le (order.le_succ i) (this _) },
       { exact (hf.integrable _).integrable_on },
       { exact (hf.integrable _).integrable_on } },
     intros i hi,
     exact integrable.indicator (integrable.sub (hf.integrable _) (hf.integrable _))
-      (𝒢.le _ _ (this _)) },
+      (ℱ.le _ _ (this _)) },
   { exact hf.integrable_stopped_value hπ hbdd },
   { exact hf.integrable_stopped_value hτ (λ ω, le_trans (hle ω) (hbdd ω)) }
 end
@@ -68,38 +70,38 @@ end
 is a submartingale if for all bounded stopping times `τ` and `π` such that `τ ≤ π`, the
 stopped value of `f` at `τ` has expectation smaller than its stopped value at `π`. -/
 lemma submartingale_of_expected_stopped_value_mono [is_finite_measure μ]
-  (hadp : adapted 𝒢 g) (hint : ∀ i, integrable (g i) μ)
-  (hf : ∀ τ π : Ω → ℕ, is_stopping_time 𝒢 τ → is_stopping_time 𝒢 π → τ ≤ π → (∃ N, ∀ ω, π ω ≤ N) →
-    μ[stopped_value g τ] ≤ μ[stopped_value g π]) :
-  submartingale g 𝒢 μ :=
+  (hadp : adapted ℱ f) (hint : ∀ i, integrable (f i) μ)
+  (hf : ∀ τ π : Ω → ι, is_stopping_time ℱ τ → is_stopping_time ℱ π → τ ≤ π → (∃ N, ∀ ω, π ω ≤ N) →
+    μ[stopped_value f τ] ≤ μ[stopped_value f π]) :
+  submartingale f ℱ μ :=
 begin
   refine submartingale_of_set_integral_le hadp hint (λ i j hij s hs, _),
   classical,
   specialize hf (s.piecewise (λ _, i) (λ _, j)) _
     (is_stopping_time_piecewise_const hij hs)
-    (is_stopping_time_const 𝒢 j) (λ x, (ite_le_sup _ _ _).trans (max_eq_right hij).le)
+    (is_stopping_time_const ℱ j) (λ x, (ite_le_sup _ _ _).trans (max_eq_right hij).le)
     ⟨j, λ x, le_rfl⟩,
   rwa [stopped_value_const, stopped_value_piecewise_const,
-    integral_piecewise (𝒢.le _ _ hs) (hint _).integrable_on (hint _).integrable_on,
-    ← integral_add_compl (𝒢.le _ _ hs) (hint j), add_le_add_iff_right] at hf,
+    integral_piecewise (ℱ.le _ _ hs) (hint _).integrable_on (hint _).integrable_on,
+    ← integral_add_compl (ℱ.le _ _ hs) (hint j), add_le_add_iff_right] at hf,
 end
 
 /-- **The optional stopping theorem** (fair game theorem): an adapted integrable process `f`
 is a submartingale if and only if for all bounded stopping times `τ` and `π` such that `τ ≤ π`, the
 stopped value of `f` at `τ` has expectation smaller than its stopped value at `π`. -/
 lemma submartingale_iff_expected_stopped_value_mono [is_finite_measure μ]
-  (hadp : adapted 𝒢 g) (hint : ∀ i, integrable (g i) μ) :
-  submartingale g 𝒢 μ ↔
-  ∀ τ π : Ω → ℕ, is_stopping_time 𝒢 τ → is_stopping_time 𝒢 π → τ ≤ π → (∃ N, ∀ x, π x ≤ N) →
-    μ[stopped_value g τ] ≤ μ[stopped_value g π] :=
+  (hadp : adapted ℱ f) (hint : ∀ i, integrable (f i) μ) :
+  submartingale f ℱ μ ↔
+  ∀ τ π : Ω → ι, is_stopping_time ℱ τ → is_stopping_time ℱ π → τ ≤ π → (∃ N, ∀ x, π x ≤ N) →
+    μ[stopped_value f τ] ≤ μ[stopped_value f π] :=
 ⟨λ hf _ _ hτ hπ hle ⟨N, hN⟩, hf.expected_stopped_value_mono hτ hπ hle hN,
  submartingale_of_expected_stopped_value_mono hadp hint⟩
 
 /-- The stopped process of a submartingale with respect to a stopping time is a submartingale. -/
 @[protected]
 lemma submartingale.stopped_process [is_finite_measure μ]
-  (h : submartingale g 𝒢 μ) (hτ : is_stopping_time 𝒢 τ) :
-  submartingale (stopped_process g τ) 𝒢 μ :=
+  (h : submartingale f ℱ μ) (hτ : is_stopping_time ℱ τ') :
+  submartingale (stopped_process f τ') ℱ μ :=
 begin
   rw submartingale_iff_expected_stopped_value_mono,
   { intros σ π hσ hπ hσ_le_π hπ_bdd,

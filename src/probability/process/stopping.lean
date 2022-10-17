@@ -996,6 +996,49 @@ integrable_stopped_value_of_mem_finset hτ hu (λ ω, finset.mem_Iic.mpr (hbdd �
 
 end stopped_value_of_mem_finset
 
+section
+variables [linear_order ι] [locally_finite_order ι] [succ_order ι]  -- todo remove succ_order
+  {f : filtration ι m} {u : ι → Ω → β} {τ π : Ω → ι}
+
+lemma stopped_value_sub_eq_sum [add_comm_group β] (hle : τ ≤ π) :
+  stopped_value u π - stopped_value u τ =
+  λ ω, (∑ i in finset.Ico (τ ω) (π ω), (u (order.succ i) - u i)) ω :=
+begin
+  ext ω,
+  simp only [stopped_value, pi.sub_apply, finset.sum_apply, finset.sum_sub_distrib],
+  sorry,
+  --rw [finset.sum_Ico_eq_sub _ (hle ω), finset.sum_range_sub, finset.sum_range_sub],
+end
+
+lemma stopped_value_sub_eq_sum' [order_bot ι] [add_comm_group β]
+  (hle : τ ≤ π) {N : ι} (hbdd : ∀ ω, π ω ≤ N) :
+  stopped_value u π - stopped_value u τ =
+  λ ω, (∑ i in finset.Ico ⊥ (order.succ N),
+    set.indicator {ω | τ ω ≤ i ∧ i < π ω} (u (order.succ i) - u i)) ω :=
+begin
+  rw stopped_value_sub_eq_sum hle,
+  ext ω,
+  simp only [finset.sum_apply, finset.sum_indicator_eq_sum_filter],
+  refine finset.sum_congr _ (λ _ _, rfl),
+  ext i,
+  simp only [finset.mem_filter, set.mem_set_of_eq, finset.mem_range, finset.mem_Ico],
+  refine ⟨λ h, ⟨⟨bot_le, h.2.trans_le ((hbdd ω).trans (order.le_succ N))⟩, h⟩, λ h, h.2⟩,
+end
+
+section add_comm_monoid
+
+variables [add_comm_monoid β]
+
+/-- TODO -/
+lemma adapted.stopped_process [topological_space β] [has_continuous_add β]
+  (hu : adapted f u) (hτ : is_stopping_time f τ) :
+  adapted f (stopped_process u τ) :=
+(hu.prog_measurable.stopped_process hτ).adapted
+
+end add_comm_monoid
+
+end
+
 
 section nat
 /-! ### Filtrations indexed by `ℕ` -/
@@ -1004,7 +1047,7 @@ open filtration
 
 variables {f : filtration ℕ m} {u : ℕ → Ω → β} {τ π : Ω → ℕ}
 
-lemma stopped_value_sub_eq_sum [add_comm_group β] (hle : τ ≤ π) :
+lemma stopped_value_sub_eq_sum_nat [add_comm_group β] (hle : τ ≤ π) :
   stopped_value u π - stopped_value u τ =
   λ ω, (∑ i in finset.Ico (τ ω) (π ω), (u (i + 1) - u i)) ω :=
 begin
@@ -1013,7 +1056,7 @@ begin
   simp [stopped_value],
 end
 
-lemma stopped_value_sub_eq_sum' [add_comm_group β] (hle : τ ≤ π) {N : ℕ} (hbdd : ∀ ω, π ω ≤ N) :
+lemma stopped_value_sub_eq_sum_nat' [add_comm_group β] (hle : τ ≤ π) {N : ℕ} (hbdd : ∀ ω, π ω ≤ N) :
   stopped_value u π - stopped_value u τ =
   λ ω, (∑ i in finset.range (N + 1),
     set.indicator {ω | τ ω ≤ i ∧ i < π ω} (u (i + 1) - u i)) ω :=
