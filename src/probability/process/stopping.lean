@@ -1030,7 +1030,10 @@ section add_comm_monoid
 variables [add_comm_monoid β]
 
 /-- TODO -/
-lemma adapted.stopped_process [topological_space β] [has_continuous_add β]
+lemma adapted.stopped_process [no_max_order ι] [order_bot ι]
+  [topological_space ι] [second_countable_topology ι] [order_topology ι] [metrizable_space ι]
+  [measurable_space ι] [borel_space ι]
+  [topological_space β] [has_continuous_add β]
   (hu : adapted f u) (hτ : is_stopping_time f τ) :
   adapted f (stopped_process u τ) :=
 (hu.prog_measurable.stopped_process hτ).adapted
@@ -1079,7 +1082,7 @@ adapted. -/
 lemma adapted.stopped_process_of_nat [topological_space β] [has_continuous_add β]
   (hu : adapted f u) (hτ : is_stopping_time f τ) :
   adapted f (stopped_process u τ) :=
-(hu.prog_measurable_of_nat.stopped_process hτ).adapted
+hu.stopped_process hτ
 
 lemma adapted.strongly_measurable_stopped_process_of_nat [topological_space β]
   [has_continuous_add β]
