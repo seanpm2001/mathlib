@@ -996,93 +996,51 @@ integrable_stopped_value_of_mem_finset hτ hu (λ ω, finset.mem_Iic.mpr (hbdd �
 
 end stopped_value_of_mem_finset
 
-section
-variables [linear_order ι] [locally_finite_order ι] [succ_order ι]  -- todo remove succ_order
-  {f : filtration ι m} {u : ι → Ω → β} {τ π : Ω → ι}
+section adapted_stopped_process
 
-lemma finset.image_succ_Ico {α} [preorder α] [succ_order α] [locally_finite_order α]
-  [is_succ_archimedean α] [no_max_order α] (a b : α) :
-  finset.image succ (finset.Ico a b) = finset.Ioc a b :=
-begin
-  ext1 i,
-  simp_rw [finset.mem_image, finset.mem_Ico, finset.mem_Ioc],
-  refine ⟨λ h, _, λ h, _⟩,
-  { obtain ⟨j, ⟨hja, hjb⟩, hj_succ⟩ := h,
-    rw ← hj_succ,
-    refine ⟨hja.trans_lt (order.lt_succ j), order.succ_le_of_lt hjb⟩, },
-  { obtain ⟨n, hn⟩ : ∃ n, succ^[n] a = i := has_le.le.exists_succ_iterate h.1.le,
-    refine ⟨succ^[n-1] a, ⟨le_succ_iterate (n-1) a, _⟩, _⟩,
-    { sorry, },
-    { change (succ ∘ (succ^[n-1])) a = i,
-      rw ← function.iterate_succ',
-      rw ← hn,
-      congr,  -- todo prove 0 < n
-      sorry, }, },
-end
-
-lemma finset.sum_Ico_succ {α β} [linear_order α] [succ_order α] [locally_finite_order α]
-  [is_succ_archimedean α] [no_max_order α] [add_comm_monoid β]
-  {f : α → β} {a b : α} :
-  ∑ i in finset.Ico a b, f (order.succ i) = ∑ i in finset.Ioc a b, f i :=
-begin
-  rw ← @finset.sum_image _ _ _ f _ _ _ succ (λ x hx y hy hxy, succ_injective hxy),
-  rw finset.image_succ_Ico a b,
-end
-
-lemma finset.sum_Ico_sub {α β} [preorder α] [succ_order α] [locally_finite_order α]
-  [subtraction_comm_monoid β]
-  {f : α → β} {a b : α} :
-  ∑ i in finset.Ico a b, (f (order.succ i) - f i) = f (order.succ b) - f a :=
-begin
-  rw finset.sum_sub_distrib,
-end
-
-lemma stopped_value_sub_eq_sum [add_comm_group β] (hle : τ ≤ π) :
-  stopped_value u π - stopped_value u τ =
-  λ ω, (∑ i in finset.Ico (τ ω) (π ω), (u (order.succ i) - u i)) ω :=
-begin
-  ext ω,
-  simp only [stopped_value, pi.sub_apply, finset.sum_apply, finset.sum_sub_distrib],
-  sorry,
-  --rw [finset.sum_Ico_eq_sub _ (hle ω), finset.sum_range_sub, finset.sum_range_sub],
-end
-
-lemma stopped_value_sub_eq_sum' [order_bot ι] [add_comm_group β]
-  (hle : τ ≤ π) {N : ι} (hbdd : ∀ ω, π ω ≤ N) :
-  stopped_value u π - stopped_value u τ =
-  λ ω, (∑ i in finset.Ico ⊥ (order.succ N),
-    set.indicator {ω | τ ω ≤ i ∧ i < π ω} (u (order.succ i) - u i)) ω :=
-begin
-  rw stopped_value_sub_eq_sum hle,
-  ext ω,
-  simp only [finset.sum_apply, finset.sum_indicator_eq_sum_filter],
-  refine finset.sum_congr _ (λ _ _, rfl),
-  ext i,
-  simp only [finset.mem_filter, set.mem_set_of_eq, finset.mem_range, finset.mem_Ico],
-  refine ⟨λ h, ⟨⟨bot_le, h.2.trans_le ((hbdd ω).trans (order.le_succ N))⟩, h⟩, λ h, h.2⟩,
-end
-
-section add_comm_monoid
-
-variables [add_comm_monoid β] [topological_space β] [has_continuous_add β]
-  [no_max_order ι] [order_bot ι]
-  [topological_space ι] [second_countable_topology ι] [order_topology ι] [metrizable_space ι]
+variables [topological_space β] [pseudo_metrizable_space β]
+  [linear_order ι]
+  [topological_space ι] [second_countable_topology ι] [order_topology ι]
   [measurable_space ι] [borel_space ι]
+  {f : filtration ι m} {u : ι → Ω → β} {τ : Ω → ι}
+
+
+section todo_name
+
+variables [metrizable_space ι]
 
 /-- TODO -/
-lemma adapted.stopped_process (hu : adapted f u) (hτ : is_stopping_time f τ) :
+lemma adapted.stopped_process
+  (hu : adapted f u) (hu_cont : ∀ ω, continuous (λ (i : ι), u i ω)) (hτ : is_stopping_time f τ) :
   adapted f (stopped_process u τ) :=
-(hu.prog_measurable.stopped_process hτ).adapted
+((hu.prog_measurable_of_continuous hu_cont).stopped_process hτ).adapted
 
 lemma adapted.strongly_measurable_stopped_process
+  (hu : adapted f u) (hu_cont : ∀ ω, continuous (λ (i : ι), u i ω)) (hτ : is_stopping_time f τ)
+  (n : ι) :
+  strongly_measurable (stopped_process u τ n) :=
+(hu.prog_measurable_of_continuous hu_cont).strongly_measurable_stopped_process hτ n
+
+end todo_name
+
+section discrete
+
+variables [discrete_topology ι]
+
+/-- TODO -/
+lemma adapted.stopped_process_of_discrete
+  (hu : adapted f u) (hτ : is_stopping_time f τ) :
+  adapted f (stopped_process u τ) :=
+(hu.prog_measurable_of_discrete.stopped_process hτ).adapted
+
+lemma adapted.strongly_measurable_stopped_process_of_discrete
   (hu : adapted f u) (hτ : is_stopping_time f τ) (n : ι) :
   strongly_measurable (stopped_process u τ n) :=
-hu.prog_measurable.strongly_measurable_stopped_process hτ n
+hu.prog_measurable_of_discrete.strongly_measurable_stopped_process hτ n
 
-end add_comm_monoid
+end discrete
 
-end
-
+end adapted_stopped_process
 
 section nat
 /-! ### Filtrations indexed by `ℕ` -/
@@ -1091,7 +1049,7 @@ open filtration
 
 variables {f : filtration ℕ m} {u : ℕ → Ω → β} {τ π : Ω → ℕ}
 
-lemma stopped_value_sub_eq_sum_nat [add_comm_group β] (hle : τ ≤ π) :
+lemma stopped_value_sub_eq_sum [add_comm_group β] (hle : τ ≤ π) :
   stopped_value u π - stopped_value u τ =
   λ ω, (∑ i in finset.Ico (τ ω) (π ω), (u (i + 1) - u i)) ω :=
 begin
@@ -1100,7 +1058,7 @@ begin
   simp [stopped_value],
 end
 
-lemma stopped_value_sub_eq_sum_nat' [add_comm_group β] (hle : τ ≤ π) {N : ℕ} (hbdd : ∀ ω, π ω ≤ N) :
+lemma stopped_value_sub_eq_sum' [add_comm_group β] (hle : τ ≤ π) {N : ℕ} (hbdd : ∀ ω, π ω ≤ N) :
   stopped_value u π - stopped_value u τ =
   λ ω, (∑ i in finset.range (N + 1),
     set.indicator {ω | τ ω ≤ i ∧ i < π ω} (u (i + 1) - u i)) ω :=
@@ -1114,22 +1072,25 @@ begin
   exact ⟨λ h, ⟨lt_trans h.2 (nat.lt_succ_iff.2 $ hbdd _), h⟩, λ h, h.2⟩
 end
 
-section add_comm_monoid
-
-variables [add_comm_monoid β]
+section
+variables [topological_space β] [pseudo_metrizable_space β]
 
 /-- For filtrations indexed by `ℕ`, the stopped process obtained from an adapted process is
 adapted. -/
-lemma adapted.stopped_process_of_nat [topological_space β] [has_continuous_add β]
+lemma adapted.stopped_process_of_nat
   (hu : adapted f u) (hτ : is_stopping_time f τ) :
   adapted f (stopped_process u τ) :=
-hu.stopped_process hτ
+hu.stopped_process_of_discrete hτ
 
-lemma adapted.strongly_measurable_stopped_process_of_nat [topological_space β]
-  [has_continuous_add β]
+lemma adapted.strongly_measurable_stopped_process_of_nat
   (hτ : is_stopping_time f τ) (hu : adapted f u) (n : ℕ) :
   strongly_measurable (stopped_process u τ n) :=
-hu.strongly_measurable_stopped_process hτ n
+hu.strongly_measurable_stopped_process_of_discrete hτ n
+
+end
+
+section add_comm_monoid
+variables [add_comm_monoid β]
 
 lemma stopped_value_eq {N : ℕ} (hbdd : ∀ ω, τ ω ≤ N) :
   stopped_value u τ =
