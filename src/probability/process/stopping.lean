@@ -1084,13 +1084,14 @@ variables [topological_space β] [pseudo_metrizable_space β]
   [measurable_space ι] [borel_space ι]
   {f : filtration ι m} {u : ι → Ω → β} {τ : Ω → ι}
 
-/-- TODO -/
+/-- The stopped process of an adapted process with continuous paths is adapted. -/
 lemma adapted.stopped_process [metrizable_space ι]
   (hu : adapted f u) (hu_cont : ∀ ω, continuous (λ i, u i ω)) (hτ : is_stopping_time f τ) :
   adapted f (stopped_process u τ) :=
 ((hu.prog_measurable_of_continuous hu_cont).stopped_process hτ).adapted
 
-/-- TODO -/
+/-- If the indexing order has the discrete topology, then the stopped process of an adapted process
+is adapted. -/
 lemma adapted.stopped_process_of_discrete [discrete_topology ι]
   (hu : adapted f u) (hτ : is_stopping_time f τ) :
   adapted f (stopped_process u τ) :=
