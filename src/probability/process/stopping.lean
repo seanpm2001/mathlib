@@ -1140,23 +1140,6 @@ begin
   exact ⟨λ h, ⟨lt_trans h.2 (nat.lt_succ_iff.2 $ hbdd _), h⟩, λ h, h.2⟩
 end
 
-section
-variables [topological_space β] [pseudo_metrizable_space β]
-
-/-- For filtrations indexed by `ℕ`, the stopped process obtained from an adapted process is
-adapted. -/
-lemma adapted.stopped_process_of_nat
-  (hu : adapted f u) (hτ : is_stopping_time f τ) :
-  adapted f (stopped_process u τ) :=
-hu.stopped_process_of_discrete hτ
-
-lemma adapted.strongly_measurable_stopped_process_of_nat
-  (hτ : is_stopping_time f τ) (hu : adapted f u) (n : ℕ) :
-  strongly_measurable (stopped_process u τ n) :=
-hu.strongly_measurable_stopped_process_of_discrete hτ n
-
-end
-
 section add_comm_monoid
 variables [add_comm_monoid β]
 
@@ -1192,22 +1175,6 @@ begin
 end
 
 end add_comm_monoid
-
-section normed_add_comm_group
-
-variables [normed_add_comm_group β] {p : ℝ≥0∞} {μ : measure Ω}
-
-lemma mem_ℒp_stopped_process_of_nat (hτ : is_stopping_time f τ) (hu : ∀ n, mem_ℒp (u n) p μ)
-  (n : ℕ) :
-  mem_ℒp (stopped_process u τ n) p μ :=
-mem_ℒp_stopped_process hτ hu n
-
-lemma integrable_stopped_process_of_nat (hτ : is_stopping_time f τ)
-  (hu : ∀ n, integrable (u n) μ) (n : ℕ) :
-  integrable (stopped_process u τ n) μ :=
-integrable_stopped_process hτ hu n
-
-end normed_add_comm_group
 
 end nat
 
