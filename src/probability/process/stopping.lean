@@ -5,7 +5,6 @@ Authors: Kexing Ying, Rémy Degenne
 -/
 
 import probability.process.adapted
-import topology.instances.discrete
 
 /-!
 # Stopping times, stopped processes and stopped values

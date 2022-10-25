@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Kexing Ying, Rémy Degenne
 -/
 import probability.process.filtration
+import topology.instances.discrete
 
 /-!
 # Adapted and progressively measurable processes
@@ -191,92 +192,6 @@ theorem adapted.prog_measurable_of_continuous
   prog_measurable f u :=
 λ i, @strongly_measurable_uncurry_of_continuous_of_strongly_measurable _ _ (set.Iic i) _ _ _ _ _ _ _
   (f i) _ (λ ω, (hu_cont ω).comp continuous_induced_dom) (λ j, (h j).mono (f.mono j.prop))
-
-/-- TODO -/
-noncomputable
-def discrete_topology.metric_space (α) [topological_space α] [discrete_topology α] :
-  metric_space α :=
-{ dist := λ x y, if y = x then 0 else 1,
-  dist_self := λ x, by simp_rw [dist, if_pos rfl],
-  dist_comm := λ x y, by simp_rw [dist, @eq_comm _ x],
-  dist_triangle := λ x y z,
-    begin
-      simp_rw [dist],
-      by_cases hzx : z = x,
-      { rw if_pos hzx,
-        refine add_nonneg _ _; { split_ifs; simp, }, },
-      { rw if_neg hzx,
-        by_cases hzy : z = y,
-        { rw [if_pos hzy, add_zero, if_neg],
-          refine λ hyx, hzx (hzy.trans hyx), },
-        { simp only [hzy, if_false, le_add_iff_nonneg_left],
-          split_ifs; simp, }, },
-    end,
-  eq_of_dist_eq_zero := λ x y hxy,
-    begin
-      simp only [ite_eq_left_iff, one_ne_zero] at hxy,
-      by_contra,
-      exact hxy (ne.symm h),
-    end }
-
-lemma discrete_topology.dist_def {α} [topological_space α] [discrete_topology α] (x y : α) :
-  (discrete_topology.metric_space α).dist x y = if y = x then 0 else 1 := rfl
-
-instance discrete_topology.metrizable_space (α) [topological_space α] [discrete_topology α] :
-  metrizable_space α :=
-begin
-  letI m : metric_space α := discrete_topology.metric_space α,
-  refine ⟨⟨m, _⟩⟩,
-  rw discrete_topology.eq_bot α,
-  change (uniform_space_of_dist dist dist_self dist_comm dist_triangle).to_topological_space = ⊥,
-  rw ← to_topological_space_bot,
-  congr,
-  rw [uniform_space_of_dist, uniform_space.core_of_dist],
-  suffices : (⨅ ε > 0, principal {p : α × α | dist p.fst p.snd < ε}) = principal id_rel,
-  { ext1, exact this, },
-  have h_set_eq_ite : ∀ ε (hε_pos : ε > 0),
-    {p : α × α | dist p.fst p.snd < ε} = ite (ε ≤ 1) id_rel set.univ,
-  { intros ε hε_pos,
-    cases le_or_lt ε 1 with hε_one hε_one,
-    { ext1 p,
-      simp only [if_pos hε_one, set.mem_set_of_eq],
-      refine ⟨λ h, _, λ h, _⟩,
-      { suffices : dist p.fst p.snd = 0, by rwa dist_eq_zero at this,
-        rw discrete_topology.dist_def at h ⊢,
-        split_ifs with h_ne,
-        { refl, },
-        { rw if_neg h_ne at h,
-          exact absurd hε_one (not_le.mpr h), }, },
-      { rw [id_rel, set.mem_set_of_eq] at h,
-        rw [h, dist_self], exact hε_pos, }, },
-    { ext1 p,
-      simp only [set.mem_set_of_eq, not_le.mpr hε_one, if_false, set.mem_univ, iff_true],
-      refine lt_of_le_of_lt _ hε_one,
-      rw discrete_topology.dist_def,
-      split_ifs,
-      exacts [zero_le_one, le_rfl],}, },
-  have : (⨅ ε > 0, principal {p : α × α | dist p.fst p.snd < ε})
-    = (⨅ ε > (0 : ℝ), ite (ε ≤ 1) (principal id_rel) ⊤),
-  { congr,
-    ext1 ε,
-    congr,
-    ext1 hε,
-    simp_rw h_set_eq_ite ε hε,
-    split_ifs,
-    { refl, },
-    { exact principal_univ, }, },
-  rw this,
-  refine le_antisymm _ _,
-  { refine (infi_le _ 1).trans _,
-    simp only [gt_iff_lt, zero_lt_one, le_refl, if_true, cinfi_pos], },
-  { refine le_infi (λ ε, _),
-    by_cases hε : 0 < ε,
-    { simp only [hε, gt_iff_lt, cinfi_pos],
-      split_ifs,
-      { exact le_rfl, },
-      { exact le_top, }, },
-    { simp only [hε, gt_iff_lt, infi_false, le_top], }, },
-end
 
 lemma adapted.prog_measurable_of_discrete {ι} [preorder ι]
   [topological_space ι] [discrete_topology ι] [second_countable_topology ι]
