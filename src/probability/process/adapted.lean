@@ -193,10 +193,9 @@ theorem adapted.prog_measurable_of_continuous
 λ i, @strongly_measurable_uncurry_of_continuous_of_strongly_measurable _ _ (set.Iic i) _ _ _ _ _ _ _
   (f i) _ (λ ω, (hu_cont ω).comp continuous_induced_dom) (λ j, (h j).mono (f.mono j.prop))
 
-lemma adapted.prog_measurable_of_discrete {ι} [preorder ι]
-  [topological_space ι] [discrete_topology ι] [second_countable_topology ι]
-  [measurable_space ι] [opens_measurable_space ι]
-  {f : filtration ι m} {u : ι → Ω → β} [pseudo_metrizable_space β]
+lemma adapted.prog_measurable_of_discrete [topological_space ι] [discrete_topology ι]
+  [second_countable_topology ι] [measurable_space ι] [opens_measurable_space ι]
+  [pseudo_metrizable_space β]
   (h : adapted f u) :
   prog_measurable f u :=
 h.prog_measurable_of_continuous (λ _, continuous_of_discrete_topology)

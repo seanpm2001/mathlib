@@ -40,28 +40,24 @@ variables {Ω ι : Type*} {m0 : measurable_space Ω} {μ : measure Ω}
 /-- Given a submartingale `f` and bounded stopping times `τ` and `π` such that `τ ≤ π`, the
 expectation of `stopped_value f τ` is less than or equal to the expectation of `stopped_value f π`.
 This is the forward direction of the optional stopping theorem. -/
-lemma submartingale.expected_stopped_value_mono [sigma_finite_filtration μ ℱ]
-  (hf : submartingale f ℱ μ) (hτ : is_stopping_time ℱ τ') (hπ : is_stopping_time ℱ π')
-  (hle : τ' ≤ π') {N : ι} (hbdd : ∀ ω, π' ω ≤ N) :
-  μ[stopped_value f τ'] ≤ μ[stopped_value f π'] :=
+lemma submartingale.expected_stopped_value_mono [sigma_finite_filtration μ 𝒢]
+  (hf : submartingale g 𝒢 μ) (hτ : is_stopping_time 𝒢 τ) (hπ : is_stopping_time 𝒢 π)
+  (hle : τ ≤ π) {N : ℕ} (hbdd : ∀ ω, π ω ≤ N) :
+  μ[stopped_value g τ] ≤ μ[stopped_value g π] :=
 begin
   rw [← sub_nonneg, ← integral_sub', stopped_value_sub_eq_sum' hle hbdd],
   { simp only [finset.sum_apply],
-    have : ∀ i, measurable_set[ℱ i] {ω : Ω | τ' ω ≤ i ∧ i < π' ω},
-    { intro i,
-      refine (hτ i).inter _,
-      convert (hπ i).compl,
-      ext x,
-      simpa },
+    have : ∀ i, measurable_set[𝒢 i] {ω : Ω | τ ω ≤ i ∧ i < π ω},
+    { exact λ i, (hτ i).inter (hπ.measurable_set_gt i), },
     rw integral_finset_sum,
     { refine finset.sum_nonneg (λ i hi, _),
-      rw [integral_indicator (ℱ.le _ _ (this _)), integral_sub', sub_nonneg],
+      rw [integral_indicator (𝒢.le _ _ (this _)), integral_sub', sub_nonneg],
       { exact hf.set_integral_le (order.le_succ i) (this _) },
       { exact (hf.integrable _).integrable_on },
       { exact (hf.integrable _).integrable_on } },
     intros i hi,
     exact integrable.indicator (integrable.sub (hf.integrable _) (hf.integrable _))
-      (ℱ.le _ _ (this _)) },
+      (𝒢.le _ _ (this _)) },
   { exact hf.integrable_stopped_value hπ hbdd },
   { exact hf.integrable_stopped_value hτ (λ ω, le_trans (hle ω) (hbdd ω)) }
 end
