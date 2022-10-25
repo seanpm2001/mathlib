@@ -200,34 +200,6 @@ lemma adapted.prog_measurable_of_discrete [topological_space ι] [discrete_topol
   prog_measurable f u :=
 h.prog_measurable_of_continuous (λ _, continuous_of_discrete_topology)
 
-/-- TODO -/
-lemma adapted.prog_measurable' {ι} [linear_order ι] [locally_finite_order ι] [order_bot ι]
-  [no_max_order ι] [measurable_space ι] [measurable_singleton_class ι] [decidable_eq ι]
-  [succ_order ι]  -- todo remove
-  [add_comm_monoid β] [has_continuous_add β]
-  {f : filtration ι m} {u : ι → Ω → β} (h : adapted f u) :
-  prog_measurable f u :=
-begin
-  intro i,
-  have : (λ p : ↥(set.Iic i) × Ω, u ↑(p.fst) p.snd)
-    = λ p : ↥(set.Iic i) × Ω, ∑ j in finset.Iio (order.succ i), if ↑p.fst = j then u j p.snd else 0,
-  { ext1 p,
-    rw finset.sum_ite_eq,
-    have hp_mem : (p.fst : ι) ∈ finset.Iio (order.succ i),
-    { have h' : ↑p.fst ≤ i := p.fst.prop,
-      exact finset.mem_Iio.mpr (h'.trans_lt (order.lt_succ i)), },
-    simp only [hp_mem, if_true], },
-  rw this,
-  refine finset.strongly_measurable_sum _ (λ j hj, strongly_measurable.ite _ _ _),
-  { suffices h_meas : measurable[measurable_space.prod _ (f i)]
-        (λ a : ↥(set.Iic i) × Ω, (a.fst : ι)),
-      from h_meas (measurable_set_singleton j),
-    exact measurable_fst.subtype_coe, },
-  { have h_le : j ≤ i := order.lt_succ_iff.mp (finset.mem_Iio.mp hj),
-    exact (strongly_measurable.mono (h j) (f.mono h_le)).comp_measurable measurable_snd, },
-  { exact strongly_measurable_const, },
-end
-
 /-- For filtrations indexed by `ℕ`, `adapted` and `prog_measurable` are equivalent. This lemma
 provides `adapted f u → prog_measurable f u`. See `prog_measurable.adapted` for the reverse
 direction, which is true more generally. -/
