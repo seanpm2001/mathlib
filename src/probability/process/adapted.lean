@@ -193,20 +193,15 @@ theorem adapted.prog_measurable_of_continuous
 λ i, @strongly_measurable_uncurry_of_continuous_of_strongly_measurable _ _ (set.Iic i) _ _ _ _ _ _ _
   (f i) _ (λ ω, (hu_cont ω).comp continuous_induced_dom) (λ j, (h j).mono (f.mono j.prop))
 
+/-- For filtrations indexed by a discrete order, `adapted` and `prog_measurable` are equivalent.
+This lemma provides `adapted f u → prog_measurable f u`.
+See `prog_measurable.adapted` for the reverse direction, which is true more generally. -/
 lemma adapted.prog_measurable_of_discrete [topological_space ι] [discrete_topology ι]
   [second_countable_topology ι] [measurable_space ι] [opens_measurable_space ι]
   [pseudo_metrizable_space β]
   (h : adapted f u) :
   prog_measurable f u :=
 h.prog_measurable_of_continuous (λ _, continuous_of_discrete_topology)
-
-/-- For filtrations indexed by `ℕ`, `adapted` and `prog_measurable` are equivalent. This lemma
-provides `adapted f u → prog_measurable f u`. See `prog_measurable.adapted` for the reverse
-direction, which is true more generally. -/
-lemma adapted.prog_measurable_of_nat {f : filtration ℕ m} {u : ℕ → Ω → β}
-  [pseudo_metrizable_space β]
-  (h : adapted f u) : prog_measurable f u :=
-h.prog_measurable_of_discrete
 
 -- this dot notation will make more sense once we have a more general definition for predictable
 lemma predictable.adapted {f : filtration ℕ m} {u : ℕ → Ω → β}
