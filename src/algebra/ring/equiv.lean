@@ -5,7 +5,7 @@ Authors: Johannes Hölzl, Callum Sutton, Yury Kudryashov
 -/
 import algebra.group.opposite
 import algebra.hom.ring
-import logic.equiv.set
+import data.set.basic
 import tactic.assert_exists
 
 /-!

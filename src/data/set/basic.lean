@@ -3103,3 +3103,83 @@ begin
 end
 
 end set
+
+section
+open function set
+
+namespace equiv
+
+@[simp] lemma range_eq_univ {α : Type*} {β : Type*} (e : α ≃ β) : range e = univ :=
+eq_univ_of_forall e.surjective
+
+protected lemma image_eq_preimage {α β} (e : α ≃ β) (s : set α) : e '' s = e.symm ⁻¹' s :=
+set.ext $ λ x, mem_image_iff_of_inverse e.left_inv e.right_inv
+
+lemma _root_.set.mem_image_equiv {α β} {S : set α} {f : α ≃ β} {x : β} :
+  x ∈ f '' S ↔ f.symm x ∈ S :=
+set.ext_iff.mp (f.image_eq_preimage S) x
+
+/-- Alias for `equiv.image_eq_preimage` -/
+lemma _root_.set.image_equiv_eq_preimage_symm {α β} (S : set α) (f : α ≃ β) :
+  f '' S = f.symm ⁻¹' S :=
+f.image_eq_preimage S
+
+/-- Alias for `equiv.image_eq_preimage` -/
+lemma _root_.set.preimage_equiv_eq_image_symm {α β} (S : set α) (f : β ≃ α) :
+  f ⁻¹' S = f.symm '' S :=
+(f.symm.image_eq_preimage S).symm
+
+@[simp] protected lemma subset_image {α β} (e : α ≃ β) (s : set α) (t : set β) :
+  e.symm '' t ⊆ s ↔ t ⊆ e '' s :=
+by rw [image_subset_iff, e.image_eq_preimage]
+
+@[simp] protected lemma subset_image' {α β} (e : α ≃ β) (s : set α) (t : set β) :
+  s ⊆ e.symm '' t ↔ e '' s ⊆ t :=
+calc s ⊆ e.symm '' t ↔ e.symm.symm '' s ⊆ t : by rw e.symm.subset_image
+                 ... ↔ e '' s ⊆ t : by rw e.symm_symm
+
+@[simp] lemma symm_image_image {α β} (e : α ≃ β) (s : set α) : e.symm '' (e '' s) = s :=
+e.left_inverse_symm.image_image s
+
+lemma eq_image_iff_symm_image_eq {α β} (e : α ≃ β) (s : set α) (t : set β) :
+  t = e '' s ↔ e.symm '' t = s :=
+(e.symm.injective.image_injective.eq_iff' (e.symm_image_image s)).symm
+
+@[simp] lemma image_symm_image {α β} (e : α ≃ β) (s : set β) : e '' (e.symm '' s) = s :=
+e.symm.symm_image_image s
+
+@[simp] lemma image_preimage {α β} (e : α ≃ β) (s : set β) : e '' (e ⁻¹' s) = s :=
+e.surjective.image_preimage s
+
+@[simp] lemma preimage_image {α β} (e : α ≃ β) (s : set α) : e ⁻¹' (e '' s) = s :=
+e.injective.preimage_image s
+
+protected lemma image_compl {α β} (f : equiv α β) (s : set α) :
+  f '' sᶜ = (f '' s)ᶜ :=
+image_compl_eq f.bijective
+
+@[simp] lemma symm_preimage_preimage {α β} (e : α ≃ β) (s : set β) :
+  e.symm ⁻¹' (e ⁻¹' s) = s :=
+e.right_inverse_symm.preimage_preimage s
+
+@[simp] lemma preimage_symm_preimage {α β} (e : α ≃ β) (s : set α) :
+  e ⁻¹' (e.symm ⁻¹' s) = s :=
+e.left_inverse_symm.preimage_preimage s
+
+@[simp] lemma preimage_subset {α β} (e : α ≃ β) (s t : set β) : e ⁻¹' s ⊆ e ⁻¹' t ↔ s ⊆ t :=
+e.surjective.preimage_subset_preimage_iff
+
+@[simp] lemma image_subset {α β} (e : α ≃ β) (s t : set α) : e '' s ⊆ e '' t ↔ s ⊆ t :=
+image_subset_image_iff e.injective
+
+@[simp] lemma image_eq_iff_eq {α β} (e : α ≃ β) (s t : set α) : e '' s = e '' t ↔ s = t :=
+image_eq_image e.injective
+
+lemma preimage_eq_iff_eq_image {α β} (e : α ≃ β) (s t) : e ⁻¹' s = t ↔ s = e '' t :=
+preimage_eq_iff_eq_image e.bijective
+
+lemma eq_preimage_iff_image_eq {α β} (e : α ≃ β) (s t) : s = e ⁻¹' t ↔ e '' s = t :=
+eq_preimage_iff_image_eq e.bijective
+
+end equiv
+end
