@@ -8,9 +8,9 @@ import algebra.ring.equiv
 
 open_locale big_operators
 
-variables {F α β R S S' : Type*}
+variables {α R S : Type*}
 
-section big_operators
+namespace ring_equiv_class
 
 protected lemma map_list_prod [semiring R] [semiring S] (f : R ≃+* S) (l : list R) :
   f l.prod = (l.map f).prod := map_list_prod f l
@@ -29,14 +29,12 @@ protected lemma map_multiset_prod [comm_semiring R] [comm_semiring S] (f : R ≃
 protected lemma map_multiset_sum [non_assoc_semiring R] [non_assoc_semiring S]
   (f : R ≃+* S) (s : multiset R) : f s.sum = (s.map f).sum := map_multiset_sum f s
 
-/-
-protected lemma map_prod {α : Type*} [comm_semiring R] [comm_semiring S] (g : R ≃+* S) (f : α → R)
+protected lemma map_prod [comm_semiring R] [comm_semiring S] (g : R ≃+* S) (f : α → R)
   (s : finset α) : g (∏ x in s, f x) = ∏ x in s, g (f x) :=
 map_prod g f s
 
-protected lemma map_sum {α : Type*} [non_assoc_semiring R] [non_assoc_semiring S]
+protected lemma map_sum [non_assoc_semiring R] [non_assoc_semiring S]
   (g : R ≃+* S) (f : α → R) (s : finset α) : g (∑ x in s, f x) = ∑ x in s, g (f x) :=
 map_sum g f s
--/
 
-end big_operators
+end ring_equiv_class

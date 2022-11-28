@@ -3,17 +3,10 @@ Copyright (c) 2018 Johannes Hölzl. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Johannes Hölzl, Callum Sutton, Yury Kudryashov
 -/
-import algebra.invertible
-import algebra.group_power.basic
-import algebra.group_with_zero.commute
-import algebra.hom.ring
-import algebra.ring.commute
-import algebra.group_with_zero.divisibility
-import algebra.ring.divisibility
 import algebra.group.opposite
+import algebra.hom.ring
 import logic.equiv.set
-
-assert_not_exists fintype
+import tactic.assert_exists
 
 /-!
 # (Semi)ring equivs
@@ -618,3 +611,6 @@ protected lemma is_domain
   exists_pair_ne := ⟨e.symm 0, e.symm 1, e.symm.injective.ne zero_ne_one⟩ }
 
 end ring_equiv
+
+-- Guard against import creep
+assert_not_exists fintype

@@ -8,9 +8,10 @@ import algebra.module.basic
 import algebra.ring.equiv
 import algebra.ring.prod
 import algebra.order.ring.inj_surj
-import data.set.finite
 import group_theory.submonoid.centralizer
 import group_theory.submonoid.membership
+
+assert_not_exists fintype
 
 /-!
 # Bundled subsemirings
@@ -481,12 +482,6 @@ mem_srange.mpr ⟨x, rfl⟩
 
 lemma map_srange : f.srange.map g = (g.comp f).srange :=
 by simpa only [srange_eq_map] using (⊤ : subsemiring R).map_map g f
-
-/-- The range of a morphism of semirings is a fintype, if the domain is a fintype.
-Note: this instance can form a diamond with `subtype.fintype` in the
-  presence of `fintype S`.-/
-instance fintype_srange [fintype R] [decidable_eq S] (f : R →+* S) : fintype (srange f) :=
-set.fintype_range f
 
 end ring_hom
 
