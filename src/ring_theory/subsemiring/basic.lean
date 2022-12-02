@@ -8,9 +8,76 @@ import algebra.module.basic
 import algebra.ring.equiv
 import algebra.ring.prod
 import algebra.order.ring.inj_surj
-import data.set.finite
+--import data.set.finite
 import group_theory.submonoid.centralizer
-import group_theory.submonoid.membership
+import group_theory.submonoid.operations
+import algebra.free_monoid.basic
+
+--assert_not_exists multiset
+assert_not_exists finset
+
+namespace submonoid
+
+open set
+
+-- TODO: this section can be generalized to `[submonoid_class B M] [complete_lattice B]`
+-- such that `complete_lattice.le` coincides with `set_like.le`
+variables {M : Type*} [mul_one_class M]
+@[to_additive]
+lemma mem_supr_of_directed {ι} [hι : nonempty ι] {S : ι → submonoid M} (hS : directed (≤) S)
+  {x : M} :
+  x ∈ (⨆ i, S i) ↔ ∃ i, x ∈ S i :=
+begin
+  refine ⟨_, λ ⟨i, hi⟩, (set_like.le_def.1 $ le_supr S i) hi⟩,
+  suffices : x ∈ closure (⋃ i, (S i : set M)) → ∃ i, x ∈ S i,
+    by simpa only [closure_Union, closure_eq (S _)] using this,
+  refine (λ hx, closure_induction hx (λ _, mem_Union.1) _ _),
+  { exact hι.elim (λ i, ⟨i, (S i).one_mem⟩) },
+  { rintros x y ⟨i, hi⟩ ⟨j, hj⟩,
+    rcases hS i j with ⟨k, hki, hkj⟩,
+    exact ⟨k, (S k).mul_mem (hki hi) (hkj hj)⟩ }
+end
+
+@[to_additive]
+lemma coe_supr_of_directed {ι} [nonempty ι] {S : ι → submonoid M} (hS : directed (≤) S) :
+  ((⨆ i, S i : submonoid M) : set M) = ⋃ i, ↑(S i) :=
+set.ext $ λ x, by simp [mem_supr_of_directed hS]
+
+end submonoid
+
+namespace mul_mem_class
+
+variables {R M : Type*} [non_unital_non_assoc_semiring R] [set_like M R] [mul_mem_class M R]
+  {S : M} {a b : R}
+
+/-- The product of an element of the additive closure of a multiplicative subsemigroup `M`
+and an element of `M` is contained in the additive closure of `M`. -/
+lemma mul_right_mem_add_closure
+  (ha : a ∈ add_submonoid.closure (S : set R)) (hb : b ∈ S) :
+  a * b ∈ add_submonoid.closure (S : set R) :=
+begin
+  revert b,
+  refine add_submonoid.closure_induction ha _ _ _; clear ha a,
+  { exact λ r hr b hb, add_submonoid.mem_closure.mpr (λ y hy, hy (mul_mem hr hb)) },
+  { exact λ b hb, by simp only [zero_mul, (add_submonoid.closure (S : set R)).zero_mem] },
+  { simp_rw add_mul,
+    exact λ r s hr hs b hb, (add_submonoid.closure (S : set R)).add_mem (hr hb) (hs hb) }
+end
+
+/-- The product of two elements of the additive closure of a submonoid `M` is an element of the
+additive closure of `M`. -/
+lemma mul_mem_add_closure
+  (ha : a ∈ add_submonoid.closure (S : set R)) (hb : b ∈ add_submonoid.closure (S : set R)) :
+  a * b ∈ add_submonoid.closure (S : set R) :=
+begin
+  revert a,
+  refine add_submonoid.closure_induction hb _ _ _; clear hb b,
+  { exact λ r hr b hb, mul_mem_class.mul_right_mem_add_closure hb hr },
+  { exact λ b hb, by simp only [mul_zero, (add_submonoid.closure (S : set R)).zero_mem] },
+  { simp_rw mul_add,
+    exact λ r s hr hs b hb, (add_submonoid.closure (S : set R)).add_mem (hr hb) (hs hb) }
+end
+end mul_mem_class
 
 /-!
 # Bundled subsemirings
@@ -20,7 +87,6 @@ We define bundled subsemirings and some standard constructions: `complete_lattic
 a `ring_hom` etc.
 -/
 
-open_locale big_operators
 
 universes u v w
 
@@ -271,39 +337,7 @@ protected theorem mul_mem {x y : R} : x ∈ s → y ∈ s → x * y ∈ s := mul
 /-- A subsemiring is closed under addition. -/
 protected theorem add_mem {x y : R} : x ∈ s → y ∈ s → x + y ∈ s := add_mem
 
-/-- Product of a list of elements in a `subsemiring` is in the `subsemiring`. -/
-lemma list_prod_mem {R : Type*} [semiring R] (s : subsemiring R) {l : list R} :
-  (∀x ∈ l, x ∈ s) → l.prod ∈ s :=
-list_prod_mem
 
-/-- Sum of a list of elements in a `subsemiring` is in the `subsemiring`. -/
-protected lemma list_sum_mem {l : list R} : (∀x ∈ l, x ∈ s) → l.sum ∈ s := list_sum_mem
-
-/-- Product of a multiset of elements in a `subsemiring` of a `comm_semiring`
-    is in the `subsemiring`. -/
-protected lemma multiset_prod_mem {R} [comm_semiring R] (s : subsemiring R) (m : multiset R) :
-  (∀a ∈ m, a ∈ s) → m.prod ∈ s :=
-multiset_prod_mem m
-
-/-- Sum of a multiset of elements in a `subsemiring` of a `semiring` is
-in the `add_subsemiring`. -/
-protected lemma multiset_sum_mem (m : multiset R) :
-  (∀a ∈ m, a ∈ s) → m.sum ∈ s :=
-multiset_sum_mem m
-
-/-- Product of elements of a subsemiring of a `comm_semiring` indexed by a `finset` is in the
-    subsemiring. -/
-protected lemma prod_mem {R : Type*} [comm_semiring R] (s : subsemiring R)
-  {ι : Type*} {t : finset ι} {f : ι → R} (h : ∀c ∈ t, f c ∈ s) :
-  ∏ i in t, f i ∈ s :=
-prod_mem h
-
-/-- Sum of elements in an `subsemiring` of an `semiring` indexed by a `finset`
-is in the `add_subsemiring`. -/
-protected lemma sum_mem (s : subsemiring R)
-  {ι : Type*} {t : finset ι} {f : ι → R} (h : ∀c ∈ t, f c ∈ s) :
-  ∑ i in t, f i ∈ s :=
-sum_mem h
 /-- A subsemiring of a `non_assoc_semiring` inherits a `non_assoc_semiring` structure -/
 instance to_non_assoc_semiring : non_assoc_semiring s :=
 { mul_zero := λ x, subtype.eq $ mul_zero x,
@@ -488,12 +522,6 @@ mem_srange.mpr ⟨x, rfl⟩
 lemma map_srange : f.srange.map g = (g.comp f).srange :=
 by simpa only [srange_eq_map] using (⊤ : subsemiring R).map_map g f
 
-/-- The range of a morphism of semirings is a fintype, if the domain is a fintype.
-Note: this instance can form a diamond with `subtype.fintype` in the
-  presence of `fintype S`.-/
-instance fintype_srange [fintype R] [decidable_eq S] (f : R →+* S) : fintype (srange f) :=
-set.fintype_range f
-
 end ring_hom
 
 namespace subsemiring
@@ -569,9 +597,9 @@ lemma center_to_submonoid (R) [semiring R] : (center R).to_submonoid = submonoid
 lemma mem_center_iff {R} [semiring R] {z : R} : z ∈ center R ↔ ∀ g, g * z = z * g :=
 iff.rfl
 
-instance decidable_mem_center {R} [semiring R] [decidable_eq R] [fintype R] :
-  decidable_pred (∈ center R) :=
-λ _, decidable_of_iff' _ mem_center_iff
+instance decidable_mem_center {R} [semiring R] (a) [decidable $ ∀ b : R, b * a = a * b] :
+  decidable (a ∈ center R) :=
+decidable_of_iff' _ mem_center_iff
 
 @[simp] lemma center_eq_top (R) [comm_semiring R] : center R = ⊤ :=
 set_like.coe_injective (set.center_eq_univ R)
@@ -737,23 +765,6 @@ closure_induction hx
   (λ x₁ x₁s, closure_induction hy (Hs x₁ x₁s) (H0_right x₁) (H1_right x₁) (Hadd_right x₁)
                                                                                 (Hmul_right x₁))
   (H0_left y) (H1_left y) (λ z z', Hadd_left z z' y) (λ z z', Hmul_left z z' y)
-
-lemma mem_closure_iff_exists_list {R} [semiring R] {s : set R} {x} : x ∈ closure s ↔
-  ∃ L : list (list R), (∀ t ∈ L, ∀ y ∈ t, y ∈ s) ∧ (L.map list.prod).sum = x :=
-⟨λ hx, add_submonoid.closure_induction (mem_closure_iff.1 hx)
-  (λ x hx, suffices ∃ t : list R, (∀ y ∈ t, y ∈ s) ∧ t.prod = x,
-    from let ⟨t, ht1, ht2⟩ := this in ⟨[t], list.forall_mem_singleton.2 ht1,
-      by rw [list.map_singleton, list.sum_singleton, ht2]⟩,
-    submonoid.closure_induction hx
-      (λ x hx, ⟨[x], list.forall_mem_singleton.2 hx, one_mul x⟩)
-      ⟨[], list.forall_mem_nil _, rfl⟩
-      (λ x y ⟨t, ht1, ht2⟩ ⟨u, hu1, hu2⟩, ⟨t ++ u, list.forall_mem_append.2 ⟨ht1, hu1⟩,
-        by rw [list.prod_append, ht2, hu2]⟩))
-  ⟨[], list.forall_mem_nil _, rfl⟩
-  (λ x y ⟨L, HL1, HL2⟩ ⟨M, HM1, HM2⟩, ⟨L ++ M, list.forall_mem_append.2 ⟨HL1, HM1⟩,
-    by rw [list.map_append, list.sum_append, HL2, HM2]⟩),
-λ ⟨L, HL1, HL2⟩, HL2 ▸ list_sum_mem (λ r hr, let ⟨t, ht1, ht2⟩ := list.mem_map.1 hr in
-  ht2 ▸ list_prod_mem _ (λ y hy, subset_closure $ HL1 t ht1 y hy))⟩
 
 variable (R)
 
