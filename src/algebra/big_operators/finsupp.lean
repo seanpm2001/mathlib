@@ -57,7 +57,8 @@ lemma prod_fintype [fintype α] (f : α →₀ M) (g : α → M → N) (h : ∀ 
 f.prod_of_support_subset (subset_univ _) g (λ x _, h x)
 
 @[simp, to_additive]
-lemma prod_single_index {a : α} {b : M} {h : α → M → N} (h_zero : h a 0 = 1) :
+lemma prod_single_index [decidable_eq α] [decidable_eq M] {a : α} {b : M} {h : α → M → N}
+  (h_zero : h a 0 = 1) :
   (single a b).prod h = h a b :=
 calc (single a b).prod h = ∏ x in {a}, h x (single a b x) :
   prod_of_support_subset _ support_single_subset h $
@@ -208,12 +209,14 @@ monoid_hom.finset_prod_apply _ _ _
 
 namespace finsupp
 
-lemma single_multiset_sum [add_comm_monoid M] (s : multiset M) (a : α) :
+lemma single_multiset_sum [decidable_eq α] [decidable_eq M] [add_comm_monoid M] (s : multiset M)
+  (a : α) :
   single a s.sum = (s.map (single a)).sum :=
 multiset.induction_on s (single_zero _) $ λ a s ih,
 by rw [multiset.sum_cons, single_add, ih, multiset.map_cons, multiset.sum_cons]
 
-lemma single_finset_sum [add_comm_monoid M] (s : finset ι) (f : ι → M) (a : α) :
+lemma single_finset_sum [decidable_eq α] [decidable_eq M] [add_comm_monoid M] (s : finset ι)
+  (f : ι → M) (a : α) :
   single a (∑ b in s, f b) = ∑ b in s, single a (f b) :=
 begin
   transitivity,
@@ -222,7 +225,8 @@ begin
   refl
 end
 
-lemma single_sum [has_zero M] [add_comm_monoid N] (s : ι →₀ M) (f : ι → M → N) (a : α) :
+lemma single_sum [decidable_eq α] [decidable_eq N] [has_zero M] [add_comm_monoid N]
+(s : ι →₀ M) (f : ι → M → N) (a : α) :
   single a (s.sum f) = s.sum (λd c, single a (f d c)) :=
 single_finset_sum _ _ _
 
@@ -335,7 +339,8 @@ prod_add_index' (λ a, (h a).map_one) (λ a, (h a).map_mul)
 
 /-- The canonical isomorphism between families of additive monoid homomorphisms `α → (M →+ N)`
 and monoid homomorphisms `(α →₀ M) →+ N`. -/
-def lift_add_hom [add_zero_class M] [add_comm_monoid N] : (α → M →+ N) ≃+ ((α →₀ M) →+ N) :=
+def lift_add_hom [decidable_eq α] [decidable_eq M] [add_zero_class M] [add_comm_monoid N] :
+  (α → M →+ N) ≃+ ((α →₀ M) →+ N) :=
 { to_fun := λ F,
   { to_fun := λ f, f.sum (λ x, F x),
     map_zero' := finset.sum_empty,
@@ -345,17 +350,20 @@ def lift_add_hom [add_zero_class M] [add_comm_monoid N] : (α → M →+ N) ≃+
   right_inv := λ F, by { ext, simp },
   map_add' := λ F G, by { ext, simp } }
 
-@[simp] lemma lift_add_hom_apply [add_comm_monoid M] [add_comm_monoid N]
+@[simp] lemma lift_add_hom_apply [decidable_eq α] [decidable_eq M]
+  [add_comm_monoid M] [add_comm_monoid N]
   (F : α → M →+ N) (f : α →₀ M) :
   lift_add_hom F f = f.sum (λ x, F x) :=
 rfl
 
-@[simp] lemma lift_add_hom_symm_apply [add_comm_monoid M] [add_comm_monoid N]
+@[simp] lemma lift_add_hom_symm_apply [decidable_eq α] [decidable_eq M]
+  [add_comm_monoid M] [add_comm_monoid N]
   (F : (α →₀ M) →+ N) (x : α) :
   lift_add_hom.symm F x = F.comp (single_add_hom x) :=
 rfl
 
-lemma lift_add_hom_symm_apply_apply [add_comm_monoid M] [add_comm_monoid N]
+lemma lift_add_hom_symm_apply_apply [decidable_eq α] [decidable_eq M]
+  [add_comm_monoid M] [add_comm_monoid N]
   (F : (α →₀ M) →+ N) (x : α) (y : M) :
   lift_add_hom.symm F x y = F (single x y) :=
 rfl
