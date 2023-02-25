@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2022 Yaël Dillies. All rights reserved.
+Copyright (c) 2023 Yaël Dillies. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Yaël Dillies
 -/
@@ -32,27 +32,17 @@ open_locale pointwise
 
 variables {α : Type*}
 
-section
-variables [preorder α] {s : set α}
+namespace finset
 
-open set
+@[elab_as_eliminator]
+protected lemma family_induction_on {p : finset (finset α) → Prop} [decidable_eq α]
+  (𝒜 : finset (finset α)) (h₀ : p ∅)
+  (h₁ : ∀ ⦃a : α⦄ ⦃𝒜 : finset (finset α)⦄, (∀ s ∈ 𝒜, a ∉ s) → p 𝒜 → p (𝒜.image $ insert a))
+  (h₂ : ∀ ⦃a : α⦄ ⦃𝒜 : finset (finset α)⦄, p (𝒜.filter ((∉) a)) → p (𝒜.filter ((∈) a)) → p 𝒜) :
+  p 𝒜 :=
+sorry
 
-lemma is_upper_set_iff_Ici_subset : is_upper_set s ↔ ∀ ⦃a⦄, a ∈ s → Ici a ⊆ s :=
-by simp [is_upper_set, subset_def, @forall_swap (_ ∈ s)]
-
-lemma is_lower_set_iff_Iic_subset : is_lower_set s ↔ ∀ ⦃a⦄, a ∈ s → Iic a ⊆ s :=
-by simp [is_lower_set, subset_def, @forall_swap (_ ∈ s)]
-
-alias is_upper_set_iff_Ici_subset ↔ is_upper_set.Ici_subset _
-alias is_lower_set_iff_Iic_subset ↔ is_lower_set.Iic_subset _
-
-lemma is_upper_set.ord_connected (h : is_upper_set s) : s.ord_connected :=
-⟨λ a ha b _, Icc_subset_Ici_self.trans $ h.Ici_subset ha⟩
-
-lemma is_lower_set.ord_connected (h : is_lower_set s) : s.ord_connected :=
-⟨λ a _ b hb, Icc_subset_Iic_self.trans $ h.Iic_subset hb⟩
-
-end
+end finset
 
 namespace finset
 
@@ -74,6 +64,9 @@ localized "infix ` \\₊ `:70   := finset.positive_sdiff" in finset_family
 by simp_rw [positive_sdiff, mem_image, mem_filter, mem_product, exists_prop, prod.exists, and_assoc,
   exists_and_distrib_left]
 
+@[simp] lemma positive_sdiff_empty (s : finset α) : s \₊ ∅ = ∅ := by simp [positive_sdiff]
+@[simp] lemma empty_positive_sdiff (s : finset α) : ∅ \₊ s = ∅ := by simp [positive_sdiff]
+
 end boolean_algebra
 
 open_locale finset_family
@@ -83,17 +76,26 @@ variables [decidable_eq α] {𝒜 ℬ : finset (finset α)}
 
 lemma card_positive_sdiff_self_le (h𝒜 : (𝒜 : set (finset α)).ord_connected) :
   (𝒜 \₊ 𝒜).card ≤ 𝒜.card :=
-sorry
+begin
+  unfreezingI { revert h𝒜 },
+  refine finset.family_induction_on 𝒜 _ _ _, clear 𝒜,
+  { simp },
+  {
+    rintro a 𝒜 h𝒜,
+  }
+end
 
 /-- A **reverse Kleitman inequality**. -/
-lemma le_card_upper_inter_lower (h𝒜 : is_upper_set (𝒜 : set (finset α)))
-  (hℬ : is_lower_set (ℬ : set (finset α))) :
+lemma le_card_upper_inter_lower (h𝒜 : is_lower_set (𝒜 : set (finset α)))
+  (hℬ : is_upper_set (ℬ : set (finset α))) :
   (𝒜 \₊ ℬ).card ≤ (𝒜 ∩ ℬ).card :=
 begin
-  refine le_trans _ (card_positive_sdiff_self_le _),
-  sorry,
-  rw coe_inter,
-  exact h𝒜.ord_connected.inter hℬ.ord_connected,
+  refine (card_le_of_subset _).trans (card_positive_sdiff_self_le _),
+  { simp_rw [subset_iff, mem_positive_sdiff, mem_inter],
+    rintro _ ⟨s, hs, t, ht, hts, rfl⟩,
+    exact ⟨s, ⟨hs, hℬ hts ht⟩, t, ⟨h𝒜 hts hs, ht⟩, hts, rfl⟩ },
+  { rw coe_inter,
+    exact h𝒜.ord_connected.inter hℬ.ord_connected }
 end
 
 end finset
