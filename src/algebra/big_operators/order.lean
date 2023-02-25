@@ -5,10 +5,15 @@ Authors: Johannes Hölzl
 -/
 
 import algebra.order.absolute_value
+import algebra.order.ring.with_top
 import algebra.big_operators.basic
+import data.fintype.card
 
 /-!
 # Results about big operators with values in an ordered algebraic structure.
+
+> THIS FILE IS SYNCHRONIZED WITH MATHLIB4.
+> Any changes to this file require a corresponding PR to mathlib4.
 
 Mostly monotonicity results for the `∏` and `∑` operations.
 
@@ -106,13 +111,7 @@ equal to the corresponding factor `g i` of another finite product, then
 `∏ i in s, f i ≤ ∏ i in s, g i`. -/
 @[to_additive sum_le_sum]
 lemma prod_le_prod'' (h : ∀ i ∈ s, f i ≤ g i) : ∏ i in s, f i ≤ ∏ i in s, g i :=
-begin
-  classical,
-  induction s using finset.induction_on with i s hi ihs h,
-  { refl },
-  { simp only [prod_insert hi],
-    exact mul_le_mul' (h _ (mem_insert_self _ _)) (ihs $ λ j hj, h j (mem_insert_of_mem hj)) }
-end
+multiset.prod_map_le_prod_map f g h
 
 /-- In an ordered additive commutative monoid, if each summand `f i` of one finite sum is less than
 or equal to the corresponding summand `g i` of another finite sum, then
@@ -417,6 +416,14 @@ lt_of_le_of_lt (by rw prod_const_one) $ prod_lt_prod_of_nonempty' hs h
   (∏ i in s, f i) < 1 :=
 (prod_lt_prod_of_nonempty' hs h).trans_le (by rw prod_const_one)
 
+@[to_additive sum_pos'] lemma one_lt_prod' (h : ∀ i ∈ s, 1 ≤ f i) (hs : ∃ i ∈ s, 1 < f i) :
+  1 < (∏ i in s, f i) :=
+prod_const_one.symm.trans_lt $ prod_lt_prod' h hs
+
+@[to_additive] lemma prod_lt_one' (h : ∀ i ∈ s, f i ≤ 1) (hs : ∃ i ∈ s, f i < 1)  :
+  ∏ i in s, f i < 1 :=
+prod_const_one.le.trans_lt' $ prod_lt_prod' h hs
+
 @[to_additive] lemma prod_eq_prod_iff_of_le {f g : ι → M} (h : ∀ i ∈ s, f i ≤ g i) :
   ∏ i in s, f i = ∏ i in s, g i ↔ ∀ i ∈ s, f i = g i :=
 begin
@@ -470,14 +477,9 @@ section ordered_comm_semiring
 variables [ordered_comm_semiring R] {f g : ι → R} {s t : finset ι}
 open_locale classical
 
-/- this is also true for a ordered commutative multiplicative monoid -/
+/- this is also true for a ordered commutative multiplicative monoid with zero -/
 lemma prod_nonneg (h0 : ∀ i ∈ s, 0 ≤ f i) : 0 ≤ ∏ i in s, f i :=
 prod_induction f (λ i, 0 ≤ i) (λ _ _ ha hb, mul_nonneg ha hb) zero_le_one h0
-
-/- this is also true for a ordered commutative multiplicative monoid -/
-lemma prod_pos [nontrivial R] (h0 : ∀ i ∈ s, 0 < f i) :
-  0 < ∏ i in s, f i :=
-prod_induction f (λ x, 0 < x) (λ _ _ ha hb, mul_pos ha hb) zero_lt_one h0
 
 /-- If all `f i`, `i ∈ s`, are nonnegative and each `f i` is less than or equal to `g i`, then the
 product of `f i` is less than or equal to the product of `g i`. See also `finset.prod_le_prod''` for
@@ -521,9 +523,33 @@ end
 
 end ordered_comm_semiring
 
+section strict_ordered_comm_semiring
+variables [strict_ordered_comm_semiring R] [nontrivial R] {f : ι → R} {s : finset ι}
+
+/- This is also true for a ordered commutative multiplicative monoid with zero -/
+lemma prod_pos (h0 : ∀ i ∈ s, 0 < f i) : 0 < ∏ i in s, f i :=
+prod_induction f (λ x, 0 < x) (λ _ _ ha hb, mul_pos ha hb) zero_lt_one h0
+
+end strict_ordered_comm_semiring
+
 section canonically_ordered_comm_semiring
 
 variables [canonically_ordered_comm_semiring R] {f g h : ι → R} {s : finset ι} {i : ι}
+
+@[simp]
+lemma _root_.canonically_ordered_comm_semiring.multiset_prod_pos [nontrivial R] {m : multiset R} :
+  0 < m.prod ↔ (∀ x ∈ m, (0 : R) < x) :=
+begin
+  induction m using quotient.induction_on,
+  rw [multiset.quot_mk_to_coe, multiset.coe_prod],
+  exact canonically_ordered_comm_semiring.list_prod_pos,
+end
+
+/-- Note that the name is to match `canonically_ordered_comm_semiring.mul_pos`. -/
+@[simp]
+lemma _root_.canonically_ordered_comm_semiring.prod_pos [nontrivial R] :
+  0 < ∏ i in s, f i ↔ (∀ i ∈ s, (0 : R) < f i) :=
+canonically_ordered_comm_semiring.multiset_prod_pos.trans $ by simp
 
 lemma prod_le_prod' (h : ∀ i ∈ s, f i ≤ g i) :
   ∏ i in s, f i ≤ ∏ i in s, g i :=
@@ -576,34 +602,26 @@ namespace with_top
 open finset
 
 /-- A product of finite numbers is still finite -/
-lemma prod_lt_top [canonically_ordered_comm_semiring R] [nontrivial R] [decidable_eq R]
-  {s : finset ι} {f : ι → with_top R} (h : ∀ i ∈ s, f i ≠ ⊤) :
+lemma prod_lt_top [comm_monoid_with_zero R] [no_zero_divisors R] [nontrivial R] [decidable_eq R]
+  [has_lt R] {s : finset ι} {f : ι → with_top R} (h : ∀ i ∈ s, f i ≠ ⊤) :
   ∏ i in s, f i < ⊤ :=
-prod_induction f (λ a, a < ⊤) (λ a b h₁ h₂, mul_lt_top h₁.ne h₂.ne) (coe_lt_top 1) $
-  λ a ha, lt_top_iff_ne_top.2 (h a ha)
-
-/-- A sum of finite numbers is still finite -/
-lemma sum_lt_top [ordered_add_comm_monoid M] {s : finset ι} {f : ι → with_top M}
-  (h : ∀ i ∈ s, f i ≠ ⊤) : (∑ i in s, f i) < ⊤ :=
-sum_induction f (λ a, a < ⊤) (λ a b h₁ h₂, add_lt_top.2 ⟨h₁, h₂⟩) zero_lt_top $
-  λ i hi, lt_top_iff_ne_top.2 (h i hi)
+prod_induction f (λ a, a < ⊤) (λ a b h₁ h₂, mul_lt_top' h₁ h₂) (coe_lt_top 1) $
+  λ a ha, with_top.lt_top_iff_ne_top.2 (h a ha)
 
 /-- A sum of numbers is infinite iff one of them is infinite -/
-lemma sum_eq_top_iff [ordered_add_comm_monoid M] {s : finset ι} {f : ι → with_top M} :
+lemma sum_eq_top_iff [add_comm_monoid M] {s : finset ι} {f : ι → with_top M} :
   ∑ i in s, f i = ⊤ ↔ ∃ i ∈ s, f i = ⊤ :=
-begin
-  classical,
-  split,
-  { contrapose!,
-    exact λ h, (sum_lt_top $ λ i hi, (h i hi)).ne },
-  { rintro ⟨i, his, hi⟩,
-    rw [sum_eq_add_sum_diff_singleton his, hi, top_add] }
-end
+by induction s using finset.cons_induction; simp [*, or_and_distrib_right, exists_or_distrib]
 
 /-- A sum of finite numbers is still finite -/
-lemma sum_lt_top_iff [ordered_add_comm_monoid M] {s : finset ι} {f : ι → with_top M} :
+lemma sum_lt_top_iff [add_comm_monoid M] [has_lt M] {s : finset ι} {f : ι → with_top M} :
   ∑ i in s, f i < ⊤ ↔ ∀ i ∈ s, f i < ⊤ :=
-by simp only [lt_top_iff_ne_top, ne.def, sum_eq_top_iff, not_exists]
+by simp only [with_top.lt_top_iff_ne_top, ne.def, sum_eq_top_iff, not_exists]
+
+/-- A sum of finite numbers is still finite -/
+lemma sum_lt_top [add_comm_monoid M] [has_lt M] {s : finset ι} {f : ι → with_top M}
+  (h : ∀ i ∈ s, f i ≠ ⊤) : (∑ i in s, f i) < ⊤ :=
+sum_lt_top_iff.2 $ λ i hi, with_top.lt_top_iff_ne_top.2 (h i hi)
 
 end with_top
 
@@ -614,13 +632,7 @@ variables {S : Type*}
 lemma absolute_value.sum_le [semiring R] [ordered_semiring S]
   (abv : absolute_value R S) (s : finset ι) (f : ι → R) :
   abv (∑ i in s, f i) ≤ ∑ i in s, abv (f i) :=
-begin
-  letI := classical.dec_eq ι,
-  refine finset.induction_on s _ (λ i s hi ih, _),
-  { simp },
-  { simp only [finset.sum_insert hi],
-  exact (abv.add_le _ _).trans (add_le_add le_rfl ih) },
-end
+finset.le_sum_of_subadditive abv (map_zero _) abv.add_le _ _
 
 lemma is_absolute_value.abv_sum [semiring R] [ordered_semiring S] (abv : R → S)
   [is_absolute_value abv] (f : ι → R) (s : finset ι) :
