@@ -6,7 +6,7 @@ Authors: Rémy Degenne
 import probability.notation
 
 /-!
-# Condexp Measure
+# Kernel defined by a conditional expectation
 
 ## Main definitions
 
@@ -103,18 +103,50 @@ begin
   exact condexp_add ((integrable_const _).indicator hs) ((integrable_const _).indicator ht),
 end
 
+lemma cond_measure_Union {f : ℕ → set Ω} (hf_meas : ∀ i, measurable_set (f i))
+  (hf_disj : pairwise (disjoint on f)) (ω : Ω) :
+  μ⟦⋃ i, f i | m⟧ ω = ∑' i, μ⟦f i | m⟧ ω :=
+sorry
+
+lemma cond_measure_Union' {f : ℕ → set Ω} (hf_meas : ∀ i, measurable_set (f i))
+  (hf_disj : pairwise (disjoint on f)) (ω : Ω) :
+  ennreal.of_real (μ⟦⋃ i, f i | m⟧ ω) = ∑' i, ennreal.of_real (μ⟦f i | m⟧ ω) :=
+sorry
+
+open_locale classical
+
 -- this is a `Ω → measure Ω`. Under suitable conditions (standard Borel space) this could be a
 -- `kernel Ω Ω`
 noncomputable
-def condexp_to_measure {m m0 : measurable_space Ω} (μ : measure Ω)
-  (hm : m ≤ m0) [sigma_finite (μ.trim hm)] (ω : Ω) :
+def condexp_to_measure (m : measurable_space Ω) {m0 : measurable_space Ω} (μ : measure Ω) (ω : Ω) :
   measure Ω :=
-measure.of_measurable (λ s hs, ennreal.of_real (μ⟦s | m⟧ ω))
-  (by simp only [set.indicator_empty, condexp_zero', pi.zero_apply, ennreal.of_real_zero])
-  begin
-    intros f hf_meas hf_disj,
-    sorry
-  end
+if hm : m ≤ m0
+  then if h : sigma_finite (μ.trim hm)
+  then measure.of_measurable (λ s hs, ennreal.of_real (μ⟦s | m⟧ ω))
+    (by simp only [set.indicator_empty, condexp_zero', pi.zero_apply, ennreal.of_real_zero])
+    (λ f hf_meas hf_disj, cond_measure_Union' hf_meas hf_disj ω)
+  else 0
+else 0
+
+lemma condexp_to_measure_of_not_le (hm_not : ¬ m ≤ m0) (ω : Ω) :
+  condexp_to_measure m μ ω = 0 :=
+by rw [condexp_to_measure, dif_neg hm_not]
+
+lemma condexp_to_measure_of_not_sigma_finite (hm : m ≤ m0) (hμm_not : ¬ sigma_finite (μ.trim hm))
+  (ω : Ω) :
+  condexp_to_measure m μ ω = 0 :=
+by rwa [condexp_to_measure, dif_pos hm, dif_neg]
+
+lemma condexp_to_measure_apply (hm : m ≤ m0) [h : sigma_finite (μ.trim hm)] (ω : Ω) {s : set Ω}
+  (hs : measurable_set s) :
+  condexp_to_measure m μ ω s = ennreal.of_real (μ⟦s | m⟧ ω) :=
+by rw [condexp_to_measure, dif_pos hm, dif_pos h, measure.of_measurable_apply s hs]
+
+instance (hm : m ≤ m0) (μ : measure Ω) [is_finite_measure μ] (ω : Ω) :
+  is_probability_measure (condexp_to_measure m μ ω) :=
+⟨by simp_rw [condexp_to_measure, dif_pos hm,
+    dif_pos (show sigma_finite (μ.trim hm), from infer_instance),
+    measure.of_measurable_apply _ measurable_set.univ, cond_measure_univ hm, ennreal.of_real_one]⟩
 
 end conditional_probability
 
