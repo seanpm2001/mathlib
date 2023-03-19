@@ -142,11 +142,12 @@ lemma condexp_to_measure_apply (hm : m ≤ m0) [h : sigma_finite (μ.trim hm)] (
   condexp_to_measure m μ ω s = ennreal.of_real (μ⟦s | m⟧ ω) :=
 by rw [condexp_to_measure, dif_pos hm, dif_pos h, measure.of_measurable_apply s hs]
 
-instance (hm : m ≤ m0) (μ : measure Ω) [is_finite_measure μ] (ω : Ω) :
+instance [hm : fact (m ≤ m0)] (μ : measure Ω) [is_finite_measure μ] (ω : Ω) :
   is_probability_measure (condexp_to_measure m μ ω) :=
-⟨by simp_rw [condexp_to_measure, dif_pos hm,
-    dif_pos (show sigma_finite (μ.trim hm), from infer_instance),
-    measure.of_measurable_apply _ measurable_set.univ, cond_measure_univ hm, ennreal.of_real_one]⟩
+⟨by simp_rw [condexp_to_measure, dif_pos hm.elim,
+      dif_pos (show sigma_finite (μ.trim hm.elim), from infer_instance),
+      measure.of_measurable_apply _ measurable_set.univ, cond_measure_univ hm.elim,
+      ennreal.of_real_one]⟩
 
 end conditional_probability
 
