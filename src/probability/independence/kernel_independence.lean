@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rémy Degenne
 -/
 
-import probability.kernel.composition
+import probability.notation
 import measure_theory.constructions.pi
 
 /-!

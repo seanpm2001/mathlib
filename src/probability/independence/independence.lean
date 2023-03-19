@@ -240,8 +240,10 @@ end
 
 lemma indep_sets_singleton_iff [measurable_space Ω] {s t : set Ω} {μ : measure Ω} :
   indep_sets {s} {t} μ ↔ μ (s ∩ t) = μ s * μ t :=
-⟨λ h, h s t rfl rfl,
-  λ h s1 t1 hs1 ht1, by rwa [set.mem_singleton_iff.mp hs1, set.mem_singleton_iff.mp ht1]⟩
+begin
+  rw [indep_sets, indep_setsₖ_singleton_iff],
+  simp only [ae_dirac_eq, filter.eventually_pure],
+end
 
 end indep
 
