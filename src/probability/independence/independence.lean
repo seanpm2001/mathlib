@@ -432,11 +432,8 @@ lemma indep_fun_iff_measure_inter_preimage_eq_mul
     ↔ ∀ s t, measurable_set s → measurable_set t
       → μ (f ⁻¹' s ∩ g ⁻¹' t) = μ (f ⁻¹' s) * μ (g ⁻¹' t) :=
 begin
-  rw [Indep_fun, indep_fun_iff_measure_inter_preimage_eq_mul],
+  rw [indep_fun, indep_funₖ_iff_measure_inter_preimage_eq_mul],
   simp only [ae_dirac_eq, filter.eventually_pure],
-  split; intro h,
-  { refine λ s t hs ht, h (f ⁻¹' s) (g ⁻¹' t) ⟨s, hs, rfl⟩ ⟨t, ht, rfl⟩, },
-  { rintros _ _ ⟨s, hs, rfl⟩ ⟨t, ht, rfl⟩, exact h s t hs ht, },
 end
 
 lemma Indep_fun_iff_measure_inter_preimage_eq_mul {ι : Type*} {β : ι → Type*}
@@ -453,8 +450,6 @@ lemma indep_fun_iff_indep_set_preimage {mβ : measurable_space β} {mβ' : measu
   [is_probability_measure μ] (hf : measurable f) (hg : measurable g) :
   indep_fun f g μ ↔ ∀ s t, measurable_set s → measurable_set t → indep_set (f ⁻¹' s) (g ⁻¹' t) μ :=
 begin
-  rw [Indep_fun, Indep_funₖ_iff_indepₖ_set_preimage],
-  simp only [ae_dirac_eq, filter.eventually_pure],
   refine indep_fun_iff_measure_inter_preimage_eq_mul.trans _,
   split; intros h s t hs ht; specialize h s t hs ht,
   { rwa indep_set_iff_measure_inter_eq_mul (hf hs) (hg ht) μ, },
