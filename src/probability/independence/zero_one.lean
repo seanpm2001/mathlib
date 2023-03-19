@@ -3,7 +3,7 @@ Copyright (c) 2023 Rémy Degenne. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rémy Degenne
 -/
-import probability.independence.kernel_independence
+import probability.independence.independence
 
 /-!
 # Zero One Law
@@ -33,9 +33,9 @@ is measurable with respect to the tail σ-algebra `limsup s at_top` has probabil
 -/
 
 variables {Ω α ι : Type*} [measurable_space α]
-  {m m0 : measurable_space Ω} {ν : α → measure Ω} {μ : measure α}
+  {m m0 : measurable_space Ω} {ν : α → measure Ω} {μ : measure α} {μ' : measure Ω}
 
-lemma measure_eq_zero_or_one_or_top_of_indep_set_self {t : set Ω} (h_indep : indep_setₖ t t ν μ) :
+lemma measure_eq_zero_or_one_or_top_of_indep_setₖ_self {t : set Ω} (h_indep : indep_setₖ t t ν μ) :
   ∀ᵐ a ∂μ, ν a t = 0 ∨ ν a t = 1 ∨ ν a t = ∞ :=
 begin
   specialize h_indep t t (measurable_set_generate_from (set.mem_singleton t))
@@ -49,21 +49,37 @@ begin
   exact or.inr (or.inl ha.symm),
 end
 
-lemma measure_eq_zero_or_one_of_indep_set_self [∀ a, is_finite_measure (ν a)] {t : set Ω}
+lemma measure_eq_zero_or_one_or_top_of_indep_set_self {t : set Ω} (h_indep : indep_set t t μ') :
+  μ' t = 0 ∨ μ' t = 1 ∨ μ' t = ∞ :=
+by simpa only [ae_dirac_eq, filter.eventually_pure]
+  using measure_eq_zero_or_one_or_top_of_indep_setₖ_self h_indep
+
+lemma measure_eq_zero_or_one_of_indep_setₖ_self [∀ a, is_finite_measure (ν a)] {t : set Ω}
   (h_indep : indep_setₖ t t ν μ) :
   ∀ᵐ a ∂μ, ν a t = 0 ∨ ν a t = 1 :=
 begin
-  filter_upwards [measure_eq_zero_or_one_or_top_of_indep_set_self h_indep] with a h_0_1_top,
+  filter_upwards [measure_eq_zero_or_one_or_top_of_indep_setₖ_self h_indep] with a h_0_1_top,
   simpa [measure_ne_top (ν a)] using h_0_1_top,
 end
 
+lemma measure_eq_zero_or_one_of_indep_set_self [is_finite_measure μ'] {t : set Ω}
+  (h_indep : indep_set t t μ') :
+  μ' t = 0 ∨ μ' t = 1 :=
+by simpa only [ae_dirac_eq, filter.eventually_pure]
+  using measure_eq_zero_or_one_of_indep_setₖ_self h_indep
+
 variables [∀ a, is_probability_measure (ν a)] {s : ι → measurable_space Ω}
+  [is_probability_measure μ']
 
 open filter
 
 lemma indepₖ_bsupr_compl (h_le : ∀ n, s n ≤ m0) (h_indep : Indepₖ s ν μ) (t : set ι) :
   indepₖ (⨆ n ∈ t, s n) (⨆ n ∈ tᶜ, s n) ν μ :=
 indepₖ_supr_of_disjoint h_le h_indep disjoint_compl_right
+
+lemma indep_bsupr_compl (h_le : ∀ n, s n ≤ m0) (h_indep : Indep s μ') (t : set ι) :
+  indep (⨆ n ∈ t, s n) (⨆ n ∈ tᶜ, s n) μ' :=
+indepₖ_bsupr_compl h_le h_indep t
 
 section abstract
 variables {β : Type*} {p : set ι → Prop} {f : filter ι} {ns : β → set ι}
@@ -87,6 +103,11 @@ begin
   exact eventually_of_mem (hf t ht) le_supr₂,
 end
 
+lemma indep_bsupr_limsup (h_le : ∀ n, s n ≤ m0) (h_indep : Indep s μ')
+  (hf : ∀ t, p t → tᶜ ∈ f) {t : set ι} (ht : p t) :
+  indep (⨆ n ∈ t, s n) (limsup s f) μ' :=
+indepₖ_bsupr_limsup h_le h_indep hf ht
+
 lemma indepₖ_supr_directed_limsup (h_le : ∀ n, s n ≤ m0) (h_indep : Indepₖ s ν μ)
   (hf : ∀ t, p t → tᶜ ∈ f) (hns : directed (≤) ns) (hnsp : ∀ a, p (ns a)) :
   indepₖ (⨆ a, ⨆ n ∈ (ns a), s n) (limsup s f) ν μ :=
@@ -102,6 +123,11 @@ begin
     { exact hc.2 hn, }, },
 end
 
+lemma indep_supr_directed_limsup (h_le : ∀ n, s n ≤ m0) (h_indep : Indep s μ')
+  (hf : ∀ t, p t → tᶜ ∈ f) (hns : directed (≤) ns) (hnsp : ∀ a, p (ns a)) :
+  indep (⨆ a, ⨆ n ∈ (ns a), s n) (limsup s f) μ' :=
+indepₖ_supr_directed_limsup h_le h_indep hf hns hnsp
+
 lemma indepₖ_supr_limsup (h_le : ∀ n, s n ≤ m0) (h_indep : Indepₖ s ν μ) (hf : ∀ t, p t → tᶜ ∈ f)
   (hns : directed (≤) ns) (hnsp : ∀ a, p (ns a)) (hns_univ : ∀ n, ∃ a, n ∈ ns a) :
   indepₖ (⨆ n, s n) (limsup s f) ν μ :=
@@ -116,18 +142,35 @@ begin
   rw [this, supr_const],
 end
 
+lemma indep_supr_limsup (h_le : ∀ n, s n ≤ m0) (h_indep : Indep s μ') (hf : ∀ t, p t → tᶜ ∈ f)
+  (hns : directed (≤) ns) (hnsp : ∀ a, p (ns a)) (hns_univ : ∀ n, ∃ a, n ∈ ns a) :
+  indep (⨆ n, s n) (limsup s f) μ' :=
+indepₖ_supr_limsup h_le h_indep hf hns hnsp hns_univ
+
 lemma indepₖ_limsup_self (h_le : ∀ n, s n ≤ m0) (h_indep : Indepₖ s ν μ) (hf : ∀ t, p t → tᶜ ∈ f)
   (hns : directed (≤) ns) (hnsp : ∀ a, p (ns a)) (hns_univ : ∀ n, ∃ a, n ∈ ns a) :
   indepₖ (limsup s f) (limsup s f) ν μ :=
 indepₖ_of_indepₖ_of_le_left (indepₖ_supr_limsup h_le h_indep hf hns hnsp hns_univ) limsup_le_supr
 
-theorem measure_zero_or_one_of_measurable_set_limsup (h_le : ∀ n, s n ≤ m0) (h_indep : Indepₖ s ν μ)
+lemma indep_limsup_self (h_le : ∀ n, s n ≤ m0) (h_indep : Indep s μ') (hf : ∀ t, p t → tᶜ ∈ f)
+  (hns : directed (≤) ns) (hnsp : ∀ a, p (ns a)) (hns_univ : ∀ n, ∃ a, n ∈ ns a) :
+  indep (limsup s f) (limsup s f) μ' :=
+indepₖ_limsup_self h_le h_indep hf hns hnsp hns_univ
+
+theorem measure_zero_or_one_of_measurable_set_limsup' (h_le : ∀ n, s n ≤ m0) (h_indep : Indepₖ s ν μ)
   (hf : ∀ t, p t → tᶜ ∈ f) (hns : directed (≤) ns) (hnsp : ∀ a, p (ns a))
   (hns_univ : ∀ n, ∃ a, n ∈ ns a) {t : set Ω} (ht_tail : measurable_set[limsup s f] t) :
   ∀ᵐ a ∂μ, ν a t = 0 ∨ ν a t = 1 :=
-measure_eq_zero_or_one_of_indep_set_self
+measure_eq_zero_or_one_of_indep_setₖ_self
   ((indepₖ_limsup_self h_le h_indep hf hns hnsp hns_univ).indep_setₖ_of_measurable_set
     ht_tail ht_tail)
+
+theorem measure_zero_or_one_of_measurable_set_limsup (h_le : ∀ n, s n ≤ m0) (h_indep : Indep s μ')
+  (hf : ∀ t, p t → tᶜ ∈ f) (hns : directed (≤) ns) (hnsp : ∀ a, p (ns a))
+  (hns_univ : ∀ n, ∃ a, n ∈ ns a) {t : set Ω} (ht_tail : measurable_set[limsup s f] t) :
+  μ' t = 0 ∨ μ' t = 1 :=
+by simpa only [ae_dirac_eq, filter.eventually_pure]
+  using measure_zero_or_one_of_measurable_set_limsup' h_le h_indep hf hns hnsp hns_univ ht_tail
 
 end abstract
 
@@ -151,14 +194,24 @@ begin
   { exact λ n, ⟨n, le_rfl⟩, },
 end
 
+lemma indep_limsup_at_top_self (h_le : ∀ n, s n ≤ m0) (h_indep : Indep s μ') :
+  indep (limsup s at_top) (limsup s at_top) μ' :=
+indepₖ_limsup_at_top_self h_le h_indep
+
 /-- **Kolmogorov's 0-1 law** : any event in the tail σ-algebra of an independent sequence of
 sub-σ-algebras has probability 0 or 1.
 The tail σ-algebra `limsup s at_top` is the same as `⋂ n, ⋃ i ≥ n, s i`. -/
-theorem measure_zero_or_one_of_measurable_set_limsup_at_top (h_le : ∀ n, s n ≤ m0)
+theorem measure_zero_or_one_of_measurable_set_limsup_at_top' (h_le : ∀ n, s n ≤ m0)
   (h_indep : Indepₖ s ν μ) {t : set Ω} (ht_tail : measurable_set[limsup s at_top] t) :
   ∀ᵐ a ∂μ, ν a t = 0 ∨ ν a t = 1 :=
-measure_eq_zero_or_one_of_indep_set_self
+measure_eq_zero_or_one_of_indep_setₖ_self
   ((indepₖ_limsup_at_top_self h_le h_indep).indep_setₖ_of_measurable_set ht_tail ht_tail)
+
+theorem measure_zero_or_one_of_measurable_set_limsup_at_top (h_le : ∀ n, s n ≤ m0)
+  (h_indep : Indep s μ') {t : set Ω} (ht_tail : measurable_set[limsup s at_top] t) :
+  μ' t = 0 ∨ μ' t = 1 :=
+by simpa only [ae_dirac_eq, filter.eventually_pure]
+  using measure_zero_or_one_of_measurable_set_limsup_at_top' h_le h_indep ht_tail
 
 end at_top
 
@@ -182,13 +235,23 @@ begin
   { exact λ n, ⟨n, le_rfl⟩, },
 end
 
+lemma indep_limsup_at_bot_self (h_le : ∀ n, s n ≤ m0) (h_indep : Indep s μ') :
+  indep (limsup s at_bot) (limsup s at_bot) μ' :=
+indepₖ_limsup_at_bot_self h_le h_indep
+
 /-- **Kolmogorov's 0-1 law** : any event in the tail σ-algebra of an independent sequence of
 sub-σ-algebras has probability 0 or 1. -/
-theorem measure_zero_or_one_of_measurable_set_limsup_at_bot (h_le : ∀ n, s n ≤ m0)
+theorem measure_zero_or_one_of_measurable_set_limsup_at_bot' (h_le : ∀ n, s n ≤ m0)
   (h_indep : Indepₖ s ν μ) {t : set Ω} (ht_tail : measurable_set[limsup s at_bot] t) :
   ∀ᵐ a ∂μ, ν a t = 0 ∨ ν a t = 1 :=
-measure_eq_zero_or_one_of_indep_set_self
+measure_eq_zero_or_one_of_indep_setₖ_self
   ((indepₖ_limsup_at_bot_self h_le h_indep).indep_setₖ_of_measurable_set ht_tail ht_tail)
+
+theorem measure_zero_or_one_of_measurable_set_limsup_at_bot (h_le : ∀ n, s n ≤ m0)
+  (h_indep : Indep s μ') {t : set Ω} (ht_tail : measurable_set[limsup s at_bot] t) :
+  μ' t = 0 ∨ μ' t = 1 :=
+by simpa only [ae_dirac_eq, filter.eventually_pure]
+  using measure_zero_or_one_of_measurable_set_limsup_at_bot' h_le h_indep ht_tail
 
 end at_bot
 
