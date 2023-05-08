@@ -44,7 +44,7 @@ makes them order-isomorphic to lower sets and antichains, and matches the conven
 Lattice structure on antichains. Order equivalence between upper/lower sets and antichains.
 -/
 
-open order_dual set
+open function order_dual set
 
 variables {α β γ : Type*} {ι : Sort*} {κ : ι → Sort*}
 
@@ -622,7 +622,23 @@ lemma Ici_le_Ioi (a : α) : Ici a ≤ Ioi a := Ioi_subset_Ici_self
 @[simp] lemma Ioi_top [order_top α] : Ioi (⊤ : α) = ⊤ := set_like.coe_injective Ioi_top
 @[simp] lemma Ici_bot [order_bot α] : Ici (⊥ : α) = ⊥ := set_like.coe_injective Ici_bot
 
+@[simp] lemma Ici_ne_top (a : α) : Ici a ≠ ⊤ :=
+λ h, (set.nonempty_Ici.ne_empty : set.Ici a ≠ ∅) $ congr_arg coe h
+
+@[simp] lemma le_Ici : s ≤ Ici a ↔ a ∈ s := ⟨λ h, h le_rfl, λ ha, s.upper.Ici_subset ha⟩
+
 end preorder
+
+section partial_order
+variables [partial_order α] {a b : α}
+
+lemma Ici_injective : injective (Ici : α → upper_set α) :=
+λ a b hab, Ici_injective (congr_arg (coe : _ → set α) hab : _)
+
+@[simp] lemma Ici_inj : Ici a = Ici b ↔ a = b := Ici_injective.eq_iff
+lemma Ici_ne_Ici : Ici a ≠ Ici b ↔ a ≠ b := Ici_inj.not
+
+end partial_order
 
 @[simp] lemma Ici_sup [semilattice_sup α] (a b : α) : Ici (a ⊔ b) = Ici a ⊔ Ici b :=
 ext Ici_inter_Ici.symm
@@ -665,7 +681,23 @@ lemma Ioi_le_Ici (a : α) : Ioi a ≤ Ici a := Ioi_subset_Ici_self
 @[simp] lemma Iic_top [order_top α] : Iic (⊤ : α) = ⊤ := set_like.coe_injective Iic_top
 @[simp] lemma Iio_bot [order_bot α] : Iio (⊥ : α) = ⊥ := set_like.coe_injective Iio_bot
 
+@[simp] lemma Iic_ne_bot (a : α) : Iic a ≠ ⊥ :=
+λ h, (nonempty_Iic.ne_empty : set.Iic a ≠ ∅) $ congr_arg coe h
+
+@[simp] lemma Iic_le : Iic a ≤ s ↔ a ∈ s := ⟨λ h, h le_rfl, λ ha, s.lower.Iic_subset ha⟩
+
 end preorder
+
+section partial_order
+variables [partial_order α] {a b : α}
+
+lemma Iic_injective : injective (Iic : α → lower_set α) :=
+λ a b hab, Iic_injective (congr_arg (coe : _ → set α) hab : _)
+
+@[simp] lemma Iic_inj : Iic a = Iic b ↔ a = b := Iic_injective.eq_iff
+lemma Iic_ne_Iic : Iic a ≠ Iic b ↔ a ≠ b := Iic_inj.not
+
+end partial_order
 
 @[simp] lemma Iic_inf [semilattice_inf α] (a b : α) : Iic (a ⊓ b) = Iic a ⊓ Iic b :=
 set_like.coe_injective Iic_inter_Iic.symm

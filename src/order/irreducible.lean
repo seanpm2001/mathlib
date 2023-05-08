@@ -1,15 +1,24 @@
 /-
-Copyright (c) 2022 Yaël Dillies. All rights reserved.
+Copyright (c) 2023 Yaël Dillies. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Yaël Dillies
 -/
 import data.finset.lattice
 import data.fintype.card
-import order.upper_lower.basic
 
 /-!
 # Birkhoff's representation theorem
 -/
+
+section
+variables {α : Type*} [preorder α] [finite α]
+
+@[priority 100] -- See note [lower instance priority]
+instance finite.to_well_founded_lt : well_founded_lt α := ⟨finite.preorder.well_founded_lt⟩
+@[priority 100] -- See note [lower instance priority]
+instance finite.to_well_founded_gt : well_founded_gt α := ⟨finite.preorder.well_founded_gt⟩
+
+end
 
 open finset order_dual
 
@@ -33,7 +42,18 @@ lemma sup_prime.not_is_min (ha : sup_prime a) : ¬ is_min a := ha.1
 lemma is_min.not_sup_irred (ha : is_min a) : ¬ sup_irred a := λ h, h.1 ha
 lemma is_min.not_sup_prime (ha : is_min a) : ¬ sup_prime a := λ h, h.1 ha
 
-@[simp] protected lemma sup_prime.sup_irred : sup_prime a → sup_irred a :=
+@[simp] lemma not_sup_irred : ¬ sup_irred a ↔ is_min a ∨ ∃ b c, b ⊔ c = a ∧ b < a ∧ c < a :=
+begin
+  rw [sup_irred, not_and_distrib],
+  push_neg,
+  rw exists₂_congr,
+  simp [@eq_comm _ _ a] { contextual := tt },
+end
+
+@[simp] lemma not_sup_prime : ¬ sup_prime a ↔ is_min a ∨ ∃ b c, a ≤ b ⊔ c ∧ ¬ a ≤ b ∧ ¬ a ≤ c :=
+by { rw [sup_prime, not_and_distrib], push_neg, refl }
+
+protected lemma sup_prime.sup_irred : sup_prime a → sup_irred a :=
 and.imp_right $ λ h b c ha, by simpa [←ha] using h ha.ge
 
 variables [order_bot α] {s : finset ι} {f : ι → α}
@@ -64,14 +84,25 @@ begin
   exact (ha.2 h).imp_right ih,
 end
 
-variables [finite α]
+variables [well_founded_lt α]
 
-lemma exists_finset_sup_sup_irred_eq (a : α) :
+/-- In a well-founded lattice, any element is the supremum of finitely many sup-irreducible
+elements. This is the order-theoretic analogue of prime factorisation. -/
+lemma exists_sup_irred_decomposition (a : α) :
   ∃ s : finset α, s.sup id = a ∧ ∀ ⦃b⦄, b ∈ s → sup_irred b :=
 begin
-  obtain rfl | ha := eq_or_ne a ⊥,
-  { exact ⟨∅, by simp⟩ },
-  { sorry }
+  classical,
+  apply well_founded_lt.induction a _,
+  clear a,
+  rintro a ih,
+  by_cases ha : sup_irred a,
+  { exact ⟨{a}, by simp [ha]⟩ },
+  rw not_sup_irred at ha,
+  obtain ha | ⟨b, c, rfl, hb, hc⟩ := ha,
+  { exact ⟨∅, by simp [ha.eq_bot]⟩ },
+  obtain ⟨s, rfl, hs⟩ := ih _ hb,
+  obtain ⟨t, rfl, ht⟩ := ih _ hc,
+  exact ⟨s ∪ t, sup_union, forall_mem_union.2 ⟨hs, ht⟩⟩,
 end
 
 end semilattice_sup
@@ -89,7 +120,13 @@ def inf_prime (a : α) : Prop := ¬ is_max a ∧ ∀ ⦃b c⦄, b ⊓ c ≤ a �
 @[simp] lemma is_max.not_inf_irred (ha : is_max a) : ¬ inf_irred a := λ h, h.1 ha
 @[simp] lemma is_max.not_inf_prime (ha : is_max a) : ¬ inf_prime a := λ h, h.1 ha
 
-@[simp] protected lemma inf_prime.inf_irred : inf_prime a → inf_irred a :=
+@[simp] lemma not_inf_irred : ¬ inf_irred a ↔ is_max a ∨ ∃ b c, b ⊓ c = a ∧ a < b ∧ a < c :=
+@not_sup_irred αᵒᵈ _ _
+
+@[simp] lemma not_inf_prime : ¬ inf_prime a ↔ is_max a ∨ ∃ b c, b ⊓ c ≤ a ∧ ¬ b ≤ a ∧ ¬ c ≤ a :=
+@not_sup_prime αᵒᵈ _ _
+
+protected lemma inf_prime.inf_irred : inf_prime a → inf_irred a :=
 and.imp_right $ λ h b c ha, by simpa [←ha] using h ha.le
 
 variables [order_top α] {s : finset ι} {f : ι → α}
@@ -106,11 +143,13 @@ lemma inf_irred.finset_inf : inf_irred a → s.inf f = a → ∃ i ∈ s, f i = 
 lemma inf_prime.finset_inf : inf_prime a → s.inf f ≤ a → ∃ i ∈ s, f i ≤ a :=
 @sup_prime.finset_sup _ αᵒᵈ _ _ _ _ _
 
-variables [finite α]
+variables [well_founded_gt α]
 
-lemma exists_finset_inf_inf_irred_eq (a : α) :
+/-- In a cowell-founded lattice, any element is the infimum of finitely many inf-irreducible
+elements. This is the order-theoretic analogue of prime factorisation. -/
+lemma exists_inf_irred_decomposition (a : α) :
   ∃ s : finset α, s.inf id = a ∧ ∀ ⦃b⦄, b ∈ s → inf_irred b :=
-@exists_finset_sup_sup_irred_eq αᵒᵈ _ _ _ _
+@exists_sup_irred_decomposition αᵒᵈ _ _ _ _
 
 end semilattice_inf
 
@@ -130,81 +169,6 @@ alias inf_prime_iff_inf_irred ↔ _ inf_irred.inf_prime
 
 attribute [protected] sup_irred.sup_prime inf_irred.inf_prime
 
-open_locale classical
-
-variables [fintype α]
-
-section order_bot
-variables [order_bot α]
-
-/-- **Birkhoff's Representation Theorem**. Any finite distributive lattice is isomorphic to the
-lattice of lower sets of its sup-irreducible elements. -/
-noncomputable def lower_set_sup_irred_iso : lower_set {a : α // sup_irred a} ≃o α :=
-equiv.to_order_iso
- { to_fun := λ s, (s : set {a : α // sup_irred a}).to_finset.sup coe,
-  inv_fun := λ a, ⟨{b | ↑b ≤ a}, λ b c, le_trans⟩,
-  left_inv := λ s, begin
-    dsimp,
-    refine le_antisymm (λ a ha, _) (λ a ha, _),
-    { obtain ⟨i, hi, ha⟩ := a.2.sup_prime.finset_sup ha,
-      exact s.lower ha (set.mem_to_finset.1 hi) },
-    { dsimp,
-      exact le_sup (set.mem_to_finset.2 ha) }
-  end,
-  right_inv := λ a, begin
-    refine le_antisymm (finset.sup_le $ λ b, set.mem_to_finset.1) _,
-    obtain ⟨s, rfl, hs⟩ := exists_finset_sup_sup_irred_eq a,
-    refine finset.sup_le (λ i hi, le_sup_of_le (set.mem_to_finset.2 _) _),
-    { exact ⟨i, hs hi⟩ },
-    { dsimp,
-      exact le_sup hi },
-    { refl }
-  end }
-  (λ s t hst, finset.sup_mono $ set.to_finset_mono hst)
-  (λ b c hbc d, le_trans' hbc)
-
-/-- Any finite distributive lattice is isomorphic to its lattice of sup-irreducible lower sets. -/
-def sup_irred_lower_set_iso : {s : lower_set α // sup_irred s} ≃o α :=
-equiv.to_order_iso
- { to_fun := λ s, sorry,
-  inv_fun := λ a, ⟨lower_set.Iic a, sorry⟩,
-  left_inv := sorry,
-  right_inv := sorry }
-  sorry
-  (λ b c hbc d, le_trans' hbc)
-
-end order_bot
-
-section order_top
-variables [order_top α]
-
-/-- **Birkhoff's Representation Theorem**. Any finite distributive lattice is dual-isomorphic to the
-lattice of upper sets of its inf-irreducible elements. -/
-noncomputable def upper_set_inf_irred_iso : upper_set {a : α // inf_irred a} ≃o αᵒᵈ :=
-equiv.to_order_iso
- { to_fun := λ s, to_dual $ (s : set {a : α // inf_irred a}).to_finset.inf coe,
-  inv_fun := λ a, ⟨{b | of_dual a ≤ b}, λ b c, le_trans'⟩,
-  left_inv := λ s, begin
-    dsimp,
-    refine le_antisymm (λ a ha, _) (λ a ha, _),
-    { obtain ⟨i, hi, ha⟩ := a.2.inf_prime.finset_inf ha,
-      exact s.upper ha (set.mem_to_finset.1 hi) },
-    { dsimp,
-      exact inf_le (set.mem_to_finset.2 ha) }
-  end,
-  right_inv := order_dual.forall.2 $ λ a, of_dual.injective begin
-    refine le_antisymm _ (finset.le_inf $ λ b, set.mem_to_finset.1),
-    obtain ⟨s, rfl, hs⟩ := exists_finset_inf_inf_irred_eq a,
-    refine finset.le_inf (λ i hi, inf_le_of_le (set.mem_to_finset.2 _) _),
-    { exact ⟨i, hs hi⟩ },
-    { dsimp,
-      exact inf_le hi },
-    { refl }
-  end }
-  (λ s t hst, finset.inf_mono $ set.to_finset_mono hst)
-  (λ b c hbc d, le_trans' hbc)
-
-end order_top
 end distrib_lattice
 
 section linear_order
