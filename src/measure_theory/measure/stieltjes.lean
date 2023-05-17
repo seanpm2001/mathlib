@@ -201,6 +201,25 @@ structure stieltjes_function :=
 (mono' : monotone to_fun)
 (right_continuous' : ∀ x, continuous_within_at to_fun (Ici x) x)
 
+def stieltjes_function' : submodule ℝ≥0 (ℝ → ℝ) :=
+{ carrier := {f | monotone f ∧ ∀ x, continuous_within_at f (Ici x) x},
+  zero_mem' := ⟨by {convert monotone_const, swap, exact 0, refl, },
+    λ _, continuous_const.continuous_within_at⟩,
+  add_mem' := λ f g hf hg,
+    ⟨monotone.add hf.1 hg.1, λ x, continuous_within_at.add (hf.2 x) (hg.2 x)⟩,
+  smul_mem' := λ c f hf,
+  begin
+    have h_mul : c • f = λ x, c * f x,
+    { ext1 x, simp only [pi.smul_apply], exact_mod_cast rfl, },
+    have h_smul : c • f = λ x, c • f x,
+    { ext1 x, simp only [pi.smul_apply], },
+    refine ⟨_, λ x, _⟩,
+    { rw h_mul,
+      exact monotone.const_mul hf.1 (nnreal.coe_nonneg _), },
+    { rw h_smul,
+      exact continuous_within_at.const_smul (hf.2 x) c,},
+  end, }
+
 namespace stieltjes_function
 
 instance : has_coe_to_fun stieltjes_function (λ _, ℝ → ℝ) := ⟨to_fun⟩
