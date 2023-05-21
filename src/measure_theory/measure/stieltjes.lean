@@ -219,8 +219,6 @@ namespace stieltjes_function
 
 instance : has_coe_to_fun stieltjes_function (λ _, ℝ → ℝ) := ⟨λ f, f⟩
 
---initialize_simps_projections stieltjes_function (to_fun → apply)
-
 variable (f : stieltjes_function)
 
 lemma mono : monotone f := f.prop.1
@@ -259,6 +257,8 @@ end
 @[simps] protected def id : stieltjes_function :=
 { val := id,
   property := ⟨λ x y, id, λ x, continuous_within_at_id⟩, }
+
+@[simp] lemma id_apply (x : ℝ) : stieltjes_function.id x = x := rfl
 
 @[simp] lemma id_left_lim (x : ℝ) : left_lim stieltjes_function.id x = x :=
 tendsto_nhds_unique ((stieltjes_function.mono stieltjes_function.id).tendsto_left_lim x) $
