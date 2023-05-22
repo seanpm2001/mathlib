@@ -16,10 +16,12 @@ corrresponding measure, giving mass `f b - f a` to the interval `(a, b]`.
 
 * `stieltjes_function` is a structure containing a function from `ℝ → ℝ`, together with the
 assertions that it is monotone and right-continuous. To `f : stieltjes_function`, one associates
-a Borel measure `f.measure`.
-* `f.measure_Ioc` asserts that `f.measure (Ioc a b) = of_real (f b - f a)`
-* `f.measure_Ioo` asserts that `f.measure (Ioo a b) = of_real (left_lim f b - f a)`.
-* `f.measure_Icc` and `f.measure_Ico` are analogous.
+a Borel measure `stieltjes_function.measure f`.
+* `stieltjes_function.measure_Ioc` asserts that
+  `stieltjes_function.measure f (Ioc a b) = of_real (f b - f a)`
+* `stieltjes_function.measure_Ioo` asserts that
+  `stieltjes_function.measure f (Ioo a b) = of_real (left_lim f b - f a)`.
+* `stieltjes_function.measure_Icc` and `stieltjes_function.measure_Ico` are analogous.
 -/
 
 
