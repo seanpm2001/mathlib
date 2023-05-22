@@ -62,7 +62,7 @@ end
 /-- A Stieltjes function is almost everywhere differentiable, with derivative equal to the
 Radon-Nikodym derivative of the associated Stieltjes measure with respect to Lebesgue. -/
 lemma stieltjes_function.ae_has_deriv_at (f : stieltjes_function) :
-  ∀ᵐ x, has_deriv_at f (rn_deriv f.measure volume x).to_real x :=
+  ∀ᵐ x, has_deriv_at f (rn_deriv (stieltjes_function.measure f) volume x).to_real x :=
 begin
   /- Denote by `μ` the Stieltjes measure associated to `f`.
   The general theorem `vitali_family.ae_tendsto_rn_deriv` ensures that `μ [x, y] / (y - x)` tends
@@ -72,22 +72,24 @@ begin
   As `μ [y, x] = f x - f (y^-)`, this is not exactly the right result, so one uses a sandwiching
   argument to deduce the convergence for `(f x - f y) / (x - y)`. -/
   filter_upwards [
-    vitali_family.ae_tendsto_rn_deriv (vitali_family (volume : measure ℝ) 1) f.measure,
-    rn_deriv_lt_top f.measure volume, f.countable_left_lim_ne.ae_not_mem volume] with x hx h'x h''x,
+    vitali_family.ae_tendsto_rn_deriv (vitali_family (volume : measure ℝ) 1)
+      (stieltjes_function.measure f),
+    rn_deriv_lt_top (stieltjes_function.measure f) volume,
+    (stieltjes_function.countable_left_lim_ne f).ae_not_mem volume] with x hx h'x h''x,
   -- Limit on the right, following from differentiation of measures
   have L1 : tendsto (λ y, (f y - f x) / (y - x))
-    (𝓝[>] x) (𝓝 ((rn_deriv f.measure volume x).to_real)),
+    (𝓝[>] x) (𝓝 ((rn_deriv (stieltjes_function.measure f) volume x).to_real)),
   { apply tendsto.congr' _
       ((ennreal.tendsto_to_real h'x.ne).comp (hx.comp (real.tendsto_Icc_vitali_family_right x))),
     filter_upwards [self_mem_nhds_within],
     rintros y (hxy : x < y),
     simp only [comp_app, stieltjes_function.measure_Icc, real.volume_Icc, not_not.1 h''x],
     rw [← ennreal.of_real_div_of_pos (sub_pos.2 hxy), ennreal.to_real_of_real],
-    exact div_nonneg (sub_nonneg.2 (f.mono hxy.le)) (sub_pos.2 hxy).le },
+    exact div_nonneg (sub_nonneg.2 (stieltjes_function.mono f hxy.le)) (sub_pos.2 hxy).le },
   -- Limit on the left, following from differentiation of measures. Its form is not exactly the one
   -- we need, due to the appearance of a left limit.
   have L2 : tendsto (λ y, (left_lim f y - f x) / (y - x))
-    (𝓝[<] x) (𝓝 ((rn_deriv f.measure volume x).to_real)),
+    (𝓝[<] x) (𝓝 ((rn_deriv (stieltjes_function.measure f) volume x).to_real)),
   { apply tendsto.congr' _
       ((ennreal.tendsto_to_real h'x.ne).comp (hx.comp (real.tendsto_Icc_vitali_family_left x))),
     filter_upwards [self_mem_nhds_within],
@@ -95,10 +97,11 @@ begin
     simp only [comp_app, stieltjes_function.measure_Icc, real.volume_Icc],
     rw [← ennreal.of_real_div_of_pos (sub_pos.2 hxy), ennreal.to_real_of_real, ← neg_neg (y - x),
         div_neg, neg_div', neg_sub, neg_sub],
-    exact div_nonneg (sub_nonneg.2 (f.mono.left_lim_le hxy.le)) (sub_pos.2 hxy).le },
+    exact div_nonneg
+      (sub_nonneg.2 ((stieltjes_function.mono f).left_lim_le hxy.le)) (sub_pos.2 hxy).le },
   -- Shifting a little bit the limit on the left, by `(y - x)^2`.
   have L3 : tendsto (λ y, (left_lim f (y + 1 * (y - x)^2) - f x) / (y - x))
-    (𝓝[<] x) (𝓝 ((rn_deriv f.measure volume x).to_real)),
+    (𝓝[<] x) (𝓝 ((rn_deriv (stieltjes_function.measure f) volume x).to_real)),
   { apply tendsto_apply_add_mul_sq_div_sub (nhds_left'_le_nhds_ne x) L2,
     apply tendsto_nhds_within_of_tendsto_nhds_of_eventually_within,
     { apply tendsto.mono_left _ nhds_within_le_nhds,
@@ -113,18 +116,19 @@ begin
       nlinarith } },
   -- Deduce the correct limit on the left, by sandwiching.
   have L4 : tendsto (λ y, (f y - f x) / (y - x))
-    (𝓝[<] x) (𝓝 ((rn_deriv f.measure volume x).to_real)),
+    (𝓝[<] x) (𝓝 ((rn_deriv (stieltjes_function.measure f) volume x).to_real)),
   { apply tendsto_of_tendsto_of_tendsto_of_le_of_le' L3 L2,
     { filter_upwards [self_mem_nhds_within],
       rintros y (hy : y < x),
       refine div_le_div_of_nonpos_of_le (by linarith) ((sub_le_sub_iff_right _).2 _),
-      apply f.mono.le_left_lim,
+      apply (stieltjes_function.mono f).le_left_lim,
       have : 0 < (x - y)^2 := sq_pos_of_pos (sub_pos.2 hy),
       linarith },
     { filter_upwards [self_mem_nhds_within],
       rintros y (hy : y < x),
       refine div_le_div_of_nonpos_of_le (by linarith) _,
-      simpa only [sub_le_sub_iff_right] using f.mono.left_lim_le (le_refl y) } },
+      simpa only [sub_le_sub_iff_right]
+        using (stieltjes_function.mono f).left_lim_le (le_refl y) } },
   -- prove the result by splitting into left and right limits.
   rw [has_deriv_at_iff_tendsto_slope, slope_fun_def_field, ← nhds_left'_sup_nhds_right',
     tendsto_sup],
@@ -134,13 +138,14 @@ end
 /-- A monotone function is almost everywhere differentiable, with derivative equal to the
 Radon-Nikodym derivative of the associated Stieltjes measure with respect to Lebesgue. -/
 lemma monotone.ae_has_deriv_at {f : ℝ → ℝ} (hf : monotone f) :
-  ∀ᵐ x, has_deriv_at f (rn_deriv hf.stieltjes_function.measure volume x).to_real x :=
+  ∀ᵐ x, has_deriv_at f
+    (rn_deriv (stieltjes_function.measure hf.stieltjes_function) volume x).to_real x :=
 begin
   /- We already know that the Stieltjes function associated to `f` (i.e., `g : x ↦ f (x^+)`) is
   differentiable almost everywhere. We reduce to this statement by sandwiching values of `f` with
   values of `g`, by shifting with `(y - x)^2` (which has no influence on the relevant
   scale `y - x`.)-/
-  filter_upwards [hf.stieltjes_function.ae_has_deriv_at,
+  filter_upwards [stieltjes_function.ae_has_deriv_at hf.stieltjes_function,
     hf.countable_not_continuous_at.ae_not_mem volume] with x hx h'x,
   have A : hf.stieltjes_function x = f x,
   { rw [not_not, hf.continuous_at_iff_left_lim_eq_right_lim] at h'x,
@@ -151,10 +156,10 @@ begin
     slope_fun_def_field, A] at hx,
   -- prove differentiability on the right, by sandwiching with values of `g`
   have L1 : tendsto (λ y, (f y - f x) / (y - x)) (𝓝[>] x)
-     (𝓝 (rn_deriv hf.stieltjes_function.measure volume x).to_real),
+     (𝓝 (rn_deriv (stieltjes_function.measure hf.stieltjes_function) volume x).to_real),
   { -- limit of a helper function, with a small shift compared to `g`
     have : tendsto (λ y, (hf.stieltjes_function (y + (-1) * (y-x)^2) - f x) / (y - x)) (𝓝[>] x)
-      (𝓝 (rn_deriv hf.stieltjes_function.measure volume x).to_real),
+      (𝓝 (rn_deriv (stieltjes_function.measure hf.stieltjes_function) volume x).to_real),
     { apply tendsto_apply_add_mul_sq_div_sub (nhds_right'_le_nhds_ne x) hx.2,
       apply tendsto_nhds_within_of_tendsto_nhds_of_eventually_within,
       { apply tendsto.mono_left _ nhds_within_le_nhds,
@@ -180,10 +185,10 @@ begin
       exact (sub_le_sub_iff_right _).2 (hf.le_right_lim (le_refl y)) } },
   -- prove differentiability on the left, by sandwiching with values of `g`
   have L2 : tendsto (λ y, (f y - f x) / (y - x)) (𝓝[<] x)
-     (𝓝 (rn_deriv hf.stieltjes_function.measure volume x).to_real),
+     (𝓝 (rn_deriv (stieltjes_function.measure hf.stieltjes_function) volume x).to_real),
   { -- limit of a helper function, with a small shift compared to `g`
     have : tendsto (λ y, (hf.stieltjes_function (y + (-1) * (y-x)^2) - f x) / (y - x)) (𝓝[<] x)
-      (𝓝 (rn_deriv hf.stieltjes_function.measure volume x).to_real),
+      (𝓝 (rn_deriv (stieltjes_function.measure hf.stieltjes_function) volume x).to_real),
     { apply tendsto_apply_add_mul_sq_div_sub (nhds_left'_le_nhds_ne x) hx.1,
       apply tendsto_nhds_within_of_tendsto_nhds_of_eventually_within,
       { apply tendsto.mono_left _ nhds_within_le_nhds,
