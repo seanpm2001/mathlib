@@ -777,9 +777,8 @@ end
 /-- Conditional cdf of the measure given the value on `α`, as a Stieltjes function. -/
 noncomputable
 def cond_cdf (ρ : measure (α × ℝ)) (a : α) : stieltjes_function :=
-{ to_fun := cond_cdf' ρ a,
-  mono' := monotone_cond_cdf' ρ a,
-  right_continuous' := λ x, continuous_within_at_cond_cdf'_Ici ρ a x, }
+{ val := cond_cdf' ρ a,
+  property := ⟨monotone_cond_cdf' ρ a, λ x, continuous_within_at_cond_cdf'_Ici ρ a x⟩, }
 
 lemma cond_cdf_eq_cond_cdf_rat (ρ : measure (α × ℝ)) (a : α) (r : ℚ) :
   cond_cdf ρ a r = cond_cdf_rat ρ a r :=
@@ -817,7 +816,7 @@ begin
   refine tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds
     ((tendsto_cond_cdf_rat_at_bot ρ a).comp hqs_tendsto) (cond_cdf_nonneg ρ a) (λ x, _),
   rw [function.comp_apply, ← cond_cdf_eq_cond_cdf_rat],
-  exact (cond_cdf ρ a).mono (h_exists x).some_spec.1.le,
+  exact stieltjes_function.mono (cond_cdf ρ a) (h_exists x).some_spec.1.le,
 end
 
 /-- The conditional cdf tends to 1 at +∞ for all `a : α`. -/
@@ -836,7 +835,7 @@ begin
     ((tendsto_cond_cdf_rat_at_top ρ a).comp hqs_tendsto) tendsto_const_nhds _ (cond_cdf_le_one ρ a),
   intro x,
   rw [function.comp_apply, ← cond_cdf_eq_cond_cdf_rat],
-  exact (cond_cdf ρ a).mono (le_of_lt (h_exists x).some_spec.2),
+  exact stieltjes_function.mono (cond_cdf ρ a) (le_of_lt (h_exists x).some_spec.2),
 end
 
 lemma cond_cdf_ae_eq (ρ : measure (α × ℝ)) [is_finite_measure ρ] (r : ℚ) :
@@ -895,7 +894,7 @@ begin
   have h : ∫⁻ a in s, ennreal.of_real (cond_cdf ρ a x) ∂ρ.fst
     = ∫⁻ a in s, ennreal.of_real (⨅ r : {r' : ℚ // x < r'}, cond_cdf ρ a r) ∂ρ.fst,
   { congr' with a : 1,
-    rw ← (cond_cdf ρ a).infi_rat_gt_eq x, },
+    rw ← stieltjes_function.infi_rat_gt_eq (cond_cdf ρ a) x, },
   haveI h_nonempty : nonempty {r' : ℚ // x < ↑r'},
   { obtain ⟨r, hrx⟩ := exists_rat_gt x,
     exact ⟨⟨r, hrx⟩⟩, },
@@ -909,7 +908,8 @@ begin
     simp_rw h_coe,
     rw [set_lintegral_cond_cdf_rat ρ _ hs],
     exact measure_ne_top ρ _, },
-  { refine monotone.directed_ge (λ i j hij a, ennreal.of_real_le_of_real ((cond_cdf ρ a).mono _)),
+  { refine monotone.directed_ge (λ i j hij a, ennreal.of_real_le_of_real
+      (stieltjes_function.mono (cond_cdf ρ a) _)),
     rw [h_coe, h_coe],
     exact_mod_cast hij, },
   simp_rw [h_coe, set_lintegral_cond_cdf_rat ρ _ hs],
