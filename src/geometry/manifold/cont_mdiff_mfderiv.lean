@@ -3,6 +3,7 @@ Copyright (c) 2020 Sébastien Gouëzel. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Sébastien Gouëzel, Floris van Doorn
 -/
+import geometry.manifold.cont_mdiff_map
 import geometry.manifold.mfderiv
 
 /-!
@@ -93,6 +94,18 @@ hf.mdifferentiable x
 lemma smooth.mdifferentiable_within_at (hf : smooth I I' f) :
   mdifferentiable_within_at I I' f s x :=
 hf.mdifferentiable_at.mdifferentiable_within_at
+
+protected lemma cont_mdiff_map.mdifferentiable' (f : C^n⟮I, M; I', M'⟯) (hn : 1 ≤ n) :
+  mdifferentiable I I' f :=
+f.cont_mdiff.mdifferentiable hn
+
+protected lemma cont_mdiff_map.mdifferentiable (f : C^∞⟮I, M; I', M'⟯) :
+  mdifferentiable I I' f :=
+f.cont_mdiff.mdifferentiable le_top
+
+protected lemma cont_mdiff_map.mdifferentiable_at (f : C^∞⟮I, M; I', M'⟯) {x} :
+  mdifferentiable_at I I' f x :=
+f.mdifferentiable x
 
 /-! ### The derivative of a smooth function is smooth -/
 
