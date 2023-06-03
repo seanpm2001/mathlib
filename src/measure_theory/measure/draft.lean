@@ -100,7 +100,6 @@ begin
 end
 
 lemma countably_additive_of_todo (m : Π (s : set α), measurable_set s → ℝ≥0∞)
-  (m0 : m ∅ measurable_set.empty = 0)
   (hm_ne_top : ∀ s (hs : measurable_set s), m s hs ≠ ∞)
   (hm_add : ∀ (s t : set α) (hs : measurable_set s) (ht : measurable_set t),
     disjoint s t → m (s ∪ t) (hs.union ht) = m s hs + m t ht)
@@ -176,7 +175,7 @@ noncomputable def of_measurable' (m : Π (s : set α), measurable_set s → ℝ�
   (hm : ∀ (s : ℕ → set α) (hs : ∀ n, measurable_set (s n)),
     antitone s → (⋂ n, s n) = ∅ → tendsto (λ n, m (s n) (hs n)) at_top (𝓝 0)) :
   measure α :=
-of_measurable m m0 (countably_additive_of_todo m m0 hm_ne_top hm_add hm)
+of_measurable m m0 (countably_additive_of_todo m hm_ne_top hm_add hm)
 
 end measure
 
